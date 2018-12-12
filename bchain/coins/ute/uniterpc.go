@@ -1,6 +1,8 @@
 package ute
 
 import (
+	"net/http"
+	"html/template"
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
 	"encoding/json"
@@ -11,6 +13,32 @@ import (
 
 type UniteRPC struct {
 	*btc.BitcoinRPC
+	HtmlHandler UniteHtmlHandler
+}
+
+type UniteHtmlHandler struct {
+	unite *UniteRPC
+	t *template.Template
+}
+
+type UniteTemplateData struct {
+	EsperanzaState *EsperanzaState
+}
+
+type EsperanzaState struct {
+	CurrentEpoch        int `json:"currentEpoch"`
+	CurrentDynasty      int `json:"currentDynasty"`
+	LastFinalizedEpoch  int `json:"lastFinalizedEpoch"`
+	LastJustifiedEpoch  int `json:"lastJustifiedEpoch"`
+	Validators          int `json:"validators"`
+}
+
+func NewUniteHtmlHandler(u *UniteRPC) (UniteHtmlHandler) {
+	h := UniteHtmlHandler{
+		unite: u,
+	}
+	h.t = template.Must(template.New("ute").ParseFiles("./static/templates/coins/ute.html", "./static/templates/base.html"))
+	return h
 }
 
 func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationType)) (bchain.BlockChain, error) {
@@ -23,6 +51,8 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 	}
 	u.RPCMarshaler = btc.JSONMarshalerV1{}
 	u.ChainConfig.SupportsEstimateSmartFee = false
+	u.HtmlHandler = NewUniteHtmlHandler(u)
+
 	return u, nil
 }
 
@@ -56,17 +86,11 @@ type CmdGetFinalizationState struct {
 }
 
 type ResGetEsperanzaFinalizationState struct {
-	Error  *bchain.RPCError          `json:"error"`
-	Result struct {
-        CurrentEpoch uint64 `json:"currentEpoch"`
-        CurrentDynasty uint64 `json:"currentDynasty"`
-        LastJustifiedEpoch uint64 `json:"lastJustifiedEpoch"`
-        LastFinalizedEpoch uint64 `json:"lastFinalizedEpoch"`
-        Validators uint64 `json:"validators"`
-	} `json:"result"`
+	Error  *bchain.RPCError `json:"error"`
+	Result *EsperanzaState  `json:"result"`
 }
 
-func (u *UniteRPC) GetFinalizationState() (*ResGetEsperanzaFinalizationState, error) {
+func (u *UniteRPC) GetFinalizationState() (*EsperanzaState, error) {
 	var err error
 
 	res := ResGetEsperanzaFinalizationState{}
@@ -80,7 +104,7 @@ func (u *UniteRPC) GetFinalizationState() (*ResGetEsperanzaFinalizationState, er
 		return nil, res.Error
 	}
 
-	return &res, err
+	return res.Result, err
 }
 
 // GetBlock returns block with given hash.
@@ -145,3 +169,27 @@ func isInvalidTx(err error) bool {
 func (u *UniteRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
 	return nil, errors.New("GetMempoolEntry: not implemented")
 }
+
+func (u *UniteRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
+	return &u.HtmlHandler
+}
+
+func (h *UniteHtmlHandler) GetExtraNavItems() map[string]string {
+	return map[string]string {
+		"Esperanza": "/coin/",
+	}
+}
+
+func (h *UniteHtmlHandler) HandleCoinRequest(w http.ResponseWriter, r *http.Request) (*template.Template, interface{}, error) {
+	state, err := h.unite.GetFinalizationState()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data := UniteTemplateData{
+		EsperanzaState: state,
+	}
+
+	return h.t, data, err
+}
+

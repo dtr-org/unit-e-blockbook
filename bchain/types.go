@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"math/big"
+	"net/http"
 )
 
 // errors with specific meaning returned by blockchain rpc
@@ -147,6 +149,12 @@ type OnNewBlockFunc func(hash string, height uint32)
 // OnNewTxAddrFunc is used to send notification about a new transaction/address
 type OnNewTxAddrFunc func(txid string, desc AddressDescriptor, isOutput bool)
 
+// CoinHtmlHandler defines common interface to coin specific html handler
+type CoinHtmlHandler interface {
+	GetExtraNavItems() map[string]string
+	HandleCoinRequest(http.ResponseWriter, *http.Request) (*template.Template, interface{}, error)
+}
+
 // BlockChain defines common interface to block chain daemon
 type BlockChain interface {
 	// life-cycle methods
@@ -179,6 +187,7 @@ type BlockChain interface {
 	GetMempoolEntry(txid string) (*MempoolEntry, error)
 	// parser
 	GetChainParser() BlockChainParser
+	GetCoinHtmlHandler() CoinHtmlHandler
 }
 
 // BlockChainParser defines common interface to parsing and conversions of block chain data

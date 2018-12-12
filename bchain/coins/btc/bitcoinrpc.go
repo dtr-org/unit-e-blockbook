@@ -877,3 +877,7 @@ func (b *BitcoinRPC) Call(req interface{}, res interface{}) error {
 func (b *BitcoinRPC) GetChainParser() bchain.BlockChainParser {
 	return b.Parser
 }
+
+func (b *BitcoinRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
+	return nil
+}
