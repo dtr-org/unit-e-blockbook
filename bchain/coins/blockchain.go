@@ -15,6 +15,7 @@ import (
 	"blockbook/bchain/coins/monacoin"
 	"blockbook/bchain/coins/myriad"
 	"blockbook/bchain/coins/namecoin"
+	"blockbook/bchain/coins/ute"
 	"blockbook/bchain/coins/vertcoin"
 	"blockbook/bchain/coins/zec"
 	"blockbook/common"
@@ -36,6 +37,7 @@ var BlockChainFactories = make(map[string]blockChainFactory)
 func init() {
 	BlockChainFactories["Bitcoin"] = btc.NewBitcoinRPC
 	BlockChainFactories["Testnet"] = btc.NewBitcoinRPC
+	BlockChainFactories["Unit-e"] = ute.NewUniteRPC
 	BlockChainFactories["Zcash"] = zec.NewZCashRPC
 	BlockChainFactories["Zcash Testnet"] = zec.NewZCashRPC
 	BlockChainFactories["Ethereum"] = eth.NewEthereumRPC
