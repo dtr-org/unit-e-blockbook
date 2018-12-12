@@ -39,6 +39,11 @@
                     <li class="nav-item">
                         <a href="/" class="nav-link">Status</a>
                     </li>
+                    {{- range $name, $link := .ExtraNavItems -}}
+                    <li class="nav-item">
+                        <a href="{{ $link }}" class="nav-link">{{ $name }}</a>
+                    </li>
+                    {{- end -}}
                 </ul>
                 <span class="d-none ml-md-auto d-md-flex navbar-form navbar-left">
                     <form id="search" action="/search" method="get">

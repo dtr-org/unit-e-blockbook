@@ -4,6 +4,8 @@ import (
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
 	"encoding/json"
+	"html/template"
+	"net/http"
 
 	"github.com/golang/glog"
 	"github.com/juju/errors"
@@ -12,6 +14,32 @@ import (
 // UniteRPC is the Unit-e coin's RPC handler
 type UniteRPC struct {
 	*btc.BitcoinRPC
+	HtmlHandler UniteHtmlHandler
+}
+
+type UniteHtmlHandler struct {
+	unite *UniteRPC
+	t     *template.Template
+}
+
+type UniteTemplateData struct {
+	FinalizationState *FinalizationState
+}
+
+type FinalizationState struct {
+	CurrentEpoch       int `json:"currentEpoch"`
+	CurrentDynasty     int `json:"currentDynasty"`
+	LastFinalizedEpoch int `json:"lastFinalizedEpoch"`
+	LastJustifiedEpoch int `json:"lastJustifiedEpoch"`
+	Validators         int `json:"validators"`
+}
+
+func NewUniteHtmlHandler(u *UniteRPC) UniteHtmlHandler {
+	h := UniteHtmlHandler{
+		unite: u,
+	}
+	h.t = template.Must(template.New("ute").ParseFiles("./static/templates/coins/ute.html", "./static/templates/base.html"))
+	return h
 }
 
 // NewUniteRPC returns UniteRPC from configuration
@@ -25,6 +53,8 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 	}
 	u.RPCMarshaler = btc.JSONMarshalerV1{}
 	u.ChainConfig.SupportsEstimateSmartFee = false
+	u.HtmlHandler = NewUniteHtmlHandler(u)
+
 	return u, nil
 }
 
@@ -57,21 +87,15 @@ type cmdGetFinalizationState struct {
 	Method string `json:"method"`
 }
 
-type resGetEsperanzaFinalizationState struct {
-	Error  *bchain.RPCError `json:"error"`
-	Result struct {
-		CurrentEpoch       uint64 `json:"currentEpoch"`
-		CurrentDynasty     uint64 `json:"currentDynasty"`
-		LastJustifiedEpoch uint64 `json:"lastJustifiedEpoch"`
-		LastFinalizedEpoch uint64 `json:"lastFinalizedEpoch"`
-		Validators         uint64 `json:"validators"`
-	} `json:"result"`
+type resGetFinalizationState struct {
+	Error  *bchain.RPCError   `json:"error"`
+	Result *FinalizationState `json:"result"`
 }
 
-func (u *UniteRPC) getFinalizationState() (*resGetEsperanzaFinalizationState, error) {
+func (u *UniteRPC) getFinalizationState() (*FinalizationState, error) {
 	var err error
 
-	res := resGetEsperanzaFinalizationState{}
+	res := resGetFinalizationState{}
 	req := cmdGetFinalizationState{Method: "getfinalizationstate"}
 	err = u.Call(&req, &res)
 
@@ -82,7 +106,7 @@ func (u *UniteRPC) getFinalizationState() (*resGetEsperanzaFinalizationState, er
 		return nil, res.Error
 	}
 
-	return &res, err
+	return res.Result, err
 }
 
 // GetBlock returns block with given hash.
@@ -146,4 +170,27 @@ func isInvalidTx(err error) bool {
 // GetMempoolEntry returns mempool data for given transaction
 func (u *UniteRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
 	return nil, errors.New("unit-e rpc: GetMempoolEntry: not implemented")
+}
+
+func (u *UniteRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
+	return &u.HtmlHandler
+}
+
+func (h *UniteHtmlHandler) GetExtraNavItems() map[string]string {
+	return map[string]string{
+		"Finalization": "/coin/",
+	}
+}
+
+func (h *UniteHtmlHandler) HandleCoinRequest(w http.ResponseWriter, r *http.Request) (*template.Template, interface{}, error) {
+	state, err := h.unite.getFinalizationState()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data := UniteTemplateData{
+		FinalizationState: state,
+	}
+
+	return h.t, data, err
 }
