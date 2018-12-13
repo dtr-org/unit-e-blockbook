@@ -15,6 +15,7 @@ import (
 type UniteRPC struct {
 	*btc.BitcoinRPC
 	HtmlHandler UniteHtmlHandler
+	txTypesMap  map[uint32]string
 }
 
 type UniteHtmlHandler struct {
@@ -34,10 +35,16 @@ type FinalizationState struct {
 	Validators         int `json:"validators"`
 }
 
+func (u *UniteRPC) txTypeToString(t uint32) string {
+	// will return empty string if t is not in the map
+	return u.txTypesMap[t]
+}
+
 func NewUniteHtmlHandler(u *UniteRPC) UniteHtmlHandler {
 	h := UniteHtmlHandler{
 		unite: u,
 	}
+
 	h.t = template.Must(template.New("ute").ParseFiles("./static/templates/coins/ute.html", "./static/templates/base.html"))
 	return h
 }
@@ -54,6 +61,17 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 	u.RPCMarshaler = btc.JSONMarshalerV1{}
 	u.ChainConfig.SupportsEstimateSmartFee = false
 	u.HtmlHandler = NewUniteHtmlHandler(u)
+
+	u.txTypesMap = map[uint32]string{
+		0: "Standard",
+		1: "Coinstake",
+		2: "Deposit",
+		3: "Vote",
+		4: "Logout",
+		5: "Slash",
+		6: "Withdraw",
+		7: "Admin",
+	}
 
 	return u, nil
 }
@@ -179,6 +197,12 @@ func (u *UniteRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
 func (h *UniteHtmlHandler) GetExtraNavItems() map[string]string {
 	return map[string]string{
 		"Finalization": "/coin/",
+	}
+}
+
+func (h *UniteHtmlHandler) GetExtraFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"formatTxType": h.unite.txTypeToString,
 	}
 }
 

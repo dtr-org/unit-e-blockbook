@@ -152,6 +152,7 @@ type OnNewTxAddrFunc func(txid string, desc AddressDescriptor, isOutput bool)
 // CoinHtmlHandler defines common interface to coin specific html handler
 type CoinHtmlHandler interface {
 	GetExtraNavItems() map[string]string
+	GetExtraFuncMap() template.FuncMap
 	HandleCoinRequest(http.ResponseWriter, *http.Request) (*template.Template, interface{}, error)
 }
 

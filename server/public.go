@@ -35,6 +35,7 @@ type PublicServer struct {
 	txCache          *db.TxCache
 	chain            bchain.BlockChain
 	chainParser      bchain.BlockChainParser
+	coinHtmlHandler  bchain.CoinHtmlHandler
 	api              *api.Worker
 	explorerURL      string
 	internalExplorer bool
@@ -42,6 +43,7 @@ type PublicServer struct {
 	is               *common.InternalState
 	templates        []*template.Template
 	templatesFuncMap template.FuncMap
+	extraFuncMap     template.FuncMap
 	debug            bool
 }
 
@@ -76,13 +78,19 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		txCache:          txCache,
 		chain:            chain,
 		chainParser:      chain.GetChainParser(),
+		coinHtmlHandler:  chain.GetCoinHtmlHandler(),
 		explorerURL:      explorerURL,
 		internalExplorer: explorerURL == "",
 		metrics:          metrics,
 		is:               is,
 		debug:            debugMode,
 	}
-	s.templates, s.templatesFuncMap = parseTemplates()
+
+	if s.coinHtmlHandler != nil {
+		s.extraFuncMap = s.coinHtmlHandler.GetExtraFuncMap()
+	}
+
+	s.templates, s.templatesFuncMap = parseTemplates(s.extraFuncMap)
 
 	// map only basic functions, the rest is enabled by method MapFullPublicInterface
 	serveMux.Handle(path+"favicon.ico", http.FileServer(http.Dir("./static/")))
@@ -121,7 +129,9 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 		serveMux.HandleFunc(path+"spending/", s.htmlPublicTemplateHandler(s.explorerSpendingTx))
 		serveMux.HandleFunc(path+"sendtx", s.htmlPublicTemplateHandler(s.explorerSendTx))
 		// Add coin specific handlers
-		serveMux.HandleFunc(path+"coin/", s.htmlCoinSpecificTemplateHandler())
+		if s.coinHtmlHandler != nil {
+			serveMux.HandleFunc(path+"coin/", s.htmlCoinSpecificTemplateHandler())
+		}
 	} else {
 		// redirect to wallet requests for tx and address, possibly to external site
 		serveMux.HandleFunc(path+"tx/", s.txRedirect)
@@ -252,9 +262,8 @@ func (s *PublicServer) newTemplateData() *TemplateData {
 		TOSLink:          api.Text.TOSLink,
 	}
 
-	coin_html_hanlder := s.chain.GetCoinHtmlHandler()
-	if coin_html_hanlder != nil {
-		t.ExtraNavItems = coin_html_hanlder.GetExtraNavItems()
+	if s.coinHtmlHandler != nil {
+		t.ExtraNavItems = s.coinHtmlHandler.GetExtraNavItems()
 	}
 
 	return t
@@ -317,13 +326,8 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 }
 
 func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWriter, r *http.Request) {
-	coin_handler := s.chain.GetCoinHtmlHandler()
-	if coin_handler == nil {
-		return func(w http.ResponseWriter, r *http.Request) { return }
-	}
-
 	wrapper_fn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
-		ptempl, extraData, err := coin_handler.HandleCoinRequest(w, r)
+		ptempl, extraData, err := s.coinHtmlHandler.HandleCoinRequest(w, r)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -342,7 +346,7 @@ func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWri
 			// reload templates on each request
 			// to reflect changes during development
 			// ignore funcMap
-			s.templates, _ = parseTemplates()
+			s.templates, _ = parseTemplates(s.extraFuncMap)
 		}
 		t, data, err := handler(w, r)
 		if t == noTpl {
@@ -395,14 +399,21 @@ type TemplateData struct {
 	ExtraData        interface{}
 }
 
-func parseTemplates() ([]*template.Template, template.FuncMap) {
+func parseTemplates(extraFuncs template.FuncMap) ([]*template.Template, template.FuncMap) {
 	templateFuncMap := template.FuncMap{
 		"formatTime":          formatTime,
 		"formatUnixTime":      formatUnixTime,
 		"formatAmount":        formatAmount,
 		"setTxToTemplateData": setTxToTemplateData,
 		"stringInSlice":       stringInSlice,
+		"formatTxType":        func(t uint32) string { return string(t) },
 	}
+
+	// Also allow for overwriting
+	for k, v := range extraFuncs {
+		templateFuncMap[k] = v
+	}
+
 	t := make([]*template.Template, tplCount)
 	t[errorTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))
 	t[errorInternalTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))
