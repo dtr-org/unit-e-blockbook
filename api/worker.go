@@ -205,6 +205,7 @@ func (w *Worker) GetTransaction(txid string, spendingTxs bool) (*Tx, error) {
 		Locktime:      bchainTx.LockTime,
 		Time:          bchainTx.Time,
 		Txid:          bchainTx.Txid,
+		TxType:        bchainTx.TxType,
 		ValueIn:       w.chainParser.AmountToDecimalString(&valInSat),
 		ValueInSat:    valInSat,
 		ValueOut:      w.chainParser.AmountToDecimalString(&valOutSat),

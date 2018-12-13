@@ -50,10 +50,11 @@
                     <td>Merkle Root</td>
                     <td class="data ellipsis">{{$b.MerkleRoot}}</td>
                 </tr>
+                {{if $b.Nonce}}
                 <tr>
                     <td>Nonce</td>
                     <td class="data ellipsis">{{$b.Nonce}}</td>
-                </tr>
+                </tr>{{end}}
                 <tr>
                     <td>Bits</td>
                     <td class="data ellipsis">{{$b.Bits}}</td>

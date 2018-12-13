@@ -40,7 +40,7 @@ type Vin struct {
 type ScriptPubKey struct {
 	// Asm       string   `json:"asm"`
 	Hex string `json:"hex,omitempty"`
-	// Type      string   `json:"type"`
+	Type      string   `json:"type"`
 	Addresses []string `json:"addresses"`
 }
 
@@ -57,6 +57,7 @@ type Tx struct {
 	Hex      string `json:"hex"`
 	Txid     string `json:"txid"`
 	Version  int32  `json:"version"`
+	TxType   uint32 `json:"txtype,omitempty"`
 	LockTime uint32 `json:"locktime"`
 	Vin      []Vin  `json:"vin"`
 	Vout     []Vout `json:"vout"`
@@ -87,7 +88,7 @@ type BlockInfo struct {
 	BlockHeader
 	Version    json.Number `json:"version"`
 	MerkleRoot string      `json:"merkleroot"`
-	Nonce      json.Number `json:"nonce"`
+	Nonce      json.Number `json:"nonce,omitempty"`
 	Bits       string      `json:"bits"`
 	Difficulty json.Number `json:"difficulty"`
 	Txids      []string    `json:"tx,omitempty"`
