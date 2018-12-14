@@ -1,10 +1,10 @@
 package monacoin
 
 import (
-	"blockbook/bchain/coins/btc"
-
 	"github.com/btcsuite/btcd/wire"
 	"github.com/jakm/btcutil/chaincfg"
+
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
 )
 
 const (

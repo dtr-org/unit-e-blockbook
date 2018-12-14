@@ -1,10 +1,6 @@
 package server
 
 import (
-	"blockbook/api"
-	"blockbook/bchain"
-	"blockbook/common"
-	"blockbook/db"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +15,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+
+	"github.com/dtr-org/blockbook/api"
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
+	"github.com/dtr-org/blockbook/db"
 )
 
 const txsOnPage = 25

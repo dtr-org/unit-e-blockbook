@@ -1,18 +1,17 @@
 package eth
 
 import (
-	"blockbook/bchain"
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/juju/errors"
-
 	ethcommon "github.com/ethereum/go-ethereum/common"
+
+	"github.com/dtr-org/blockbook/bchain"
 )
 
 // EthereumParser handle

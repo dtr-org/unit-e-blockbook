@@ -1,9 +1,6 @@
 package api
 
 import (
-	"blockbook/bchain"
-	"blockbook/common"
-	"blockbook/db"
 	"bytes"
 	"fmt"
 	"math/big"
@@ -12,6 +9,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/juju/errors"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
+	"github.com/dtr-org/blockbook/db"
 )
 
 // Worker is handle to api worker

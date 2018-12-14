@@ -1,11 +1,12 @@
 package api
 
 import (
-	"blockbook/bchain"
-	"blockbook/common"
-	"blockbook/db"
 	"math/big"
 	"time"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
+	"github.com/dtr-org/blockbook/db"
 )
 
 // APIError extends error by information if the error details should be returned to the end user

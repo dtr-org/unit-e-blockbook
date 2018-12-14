@@ -1,8 +1,6 @@
 package bch
 
 import (
-	"blockbook/bchain"
-	"blockbook/bchain/coins/btc"
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
@@ -10,6 +8,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/jakm/bchutil"
 	"github.com/juju/errors"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
 )
 
 // BCashRPC is an interface to JSON-RPC bitcoind service.

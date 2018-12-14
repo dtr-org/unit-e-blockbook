@@ -1,8 +1,8 @@
 package db
 
 import (
-	"blockbook/bchain"
-	"blockbook/common"
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"

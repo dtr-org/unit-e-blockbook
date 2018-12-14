@@ -1,8 +1,6 @@
 package bch
 
 import (
-	"blockbook/bchain"
-	"blockbook/bchain/coins/btc"
 	"fmt"
 
 	"github.com/jakm/bchutil"
@@ -10,6 +8,9 @@ import (
 	"github.com/jakm/btcutil/chaincfg"
 	"github.com/jakm/btcutil/txscript"
 	"github.com/schancel/cashaddr-converter/address"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
 )
 
 type AddressFormat = uint8

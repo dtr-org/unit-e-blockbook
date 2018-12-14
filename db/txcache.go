@@ -1,10 +1,10 @@
 package db
 
 import (
-	"blockbook/bchain"
-	"blockbook/common"
-
 	"github.com/golang/glog"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
 )
 
 // TxCache is handle to TxCacheServer

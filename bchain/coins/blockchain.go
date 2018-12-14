@@ -1,23 +1,6 @@
 package coins
 
 import (
-	"blockbook/bchain"
-	"blockbook/bchain/coins/bch"
-	"blockbook/bchain/coins/btc"
-	"blockbook/bchain/coins/btg"
-	"blockbook/bchain/coins/dash"
-	"blockbook/bchain/coins/digibyte"
-	"blockbook/bchain/coins/dogecoin"
-	"blockbook/bchain/coins/eth"
-	"blockbook/bchain/coins/gamecredits"
-	"blockbook/bchain/coins/grs"
-	"blockbook/bchain/coins/litecoin"
-	"blockbook/bchain/coins/monacoin"
-	"blockbook/bchain/coins/myriad"
-	"blockbook/bchain/coins/namecoin"
-	"blockbook/bchain/coins/vertcoin"
-	"blockbook/bchain/coins/zec"
-	"blockbook/common"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -27,6 +10,24 @@ import (
 	"time"
 
 	"github.com/juju/errors"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins/bch"
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
+	"github.com/dtr-org/blockbook/bchain/coins/btg"
+	"github.com/dtr-org/blockbook/bchain/coins/dash"
+	"github.com/dtr-org/blockbook/bchain/coins/digibyte"
+	"github.com/dtr-org/blockbook/bchain/coins/dogecoin"
+	"github.com/dtr-org/blockbook/bchain/coins/eth"
+	"github.com/dtr-org/blockbook/bchain/coins/gamecredits"
+	"github.com/dtr-org/blockbook/bchain/coins/grs"
+	"github.com/dtr-org/blockbook/bchain/coins/litecoin"
+	"github.com/dtr-org/blockbook/bchain/coins/monacoin"
+	"github.com/dtr-org/blockbook/bchain/coins/myriad"
+	"github.com/dtr-org/blockbook/bchain/coins/namecoin"
+	"github.com/dtr-org/blockbook/bchain/coins/vertcoin"
+	"github.com/dtr-org/blockbook/bchain/coins/zec"
+	"github.com/dtr-org/blockbook/common"
 )
 
 type blockChainFactory func(config json.RawMessage, pushHandler func(bchain.NotificationType)) (bchain.BlockChain, error)

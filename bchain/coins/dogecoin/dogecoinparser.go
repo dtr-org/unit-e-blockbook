@@ -1,13 +1,14 @@
 package dogecoin
 
 import (
-	"blockbook/bchain"
-	"blockbook/bchain/coins/btc"
-	"blockbook/bchain/coins/utils"
 	"bytes"
 
 	"github.com/btcsuite/btcd/wire"
 	"github.com/jakm/btcutil/chaincfg"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
+	"github.com/dtr-org/blockbook/bchain/coins/utils"
 )
 
 const (

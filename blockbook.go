@@ -1,12 +1,12 @@
 package main
 
 import (
-	"blockbook/api"
-	"blockbook/bchain"
-	"blockbook/bchain/coins"
-	"blockbook/common"
-	"blockbook/db"
-	"blockbook/server"
+	"github.com/dtr-org/blockbook/api"
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins"
+	"github.com/dtr-org/blockbook/common"
+	"github.com/dtr-org/blockbook/db"
+	"github.com/dtr-org/blockbook/server"
 	"context"
 	"flag"
 	"log"

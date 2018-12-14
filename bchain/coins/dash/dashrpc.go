@@ -1,11 +1,12 @@
 package dash
 
 import (
-	"blockbook/bchain"
-	"blockbook/bchain/coins/btc"
 	"encoding/json"
 
 	"github.com/golang/glog"
+
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/bchain/coins/btc"
 )
 
 // DashRPC is an interface to JSON-RPC bitcoind service.

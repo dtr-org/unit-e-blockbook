@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"blockbook/bchain"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,12 +11,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/juju/errors"
-
 	ethereum "github.com/ethereum/go-ethereum"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/dtr-org/blockbook/bchain"
 )
 
 // EthereumNet type specifies the type of ethereum network

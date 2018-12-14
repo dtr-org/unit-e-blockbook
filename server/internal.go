@@ -1,10 +1,10 @@
 package server
 
 import (
-	"blockbook/api"
-	"blockbook/bchain"
-	"blockbook/common"
-	"blockbook/db"
+	"github.com/dtr-org/blockbook/api"
+	"github.com/dtr-org/blockbook/bchain"
+	"github.com/dtr-org/blockbook/common"
+	"github.com/dtr-org/blockbook/db"
 	"context"
 	"encoding/json"
 	"fmt"
