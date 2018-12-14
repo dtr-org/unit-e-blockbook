@@ -27,7 +27,20 @@ type UniteHTMLHandler struct {
 // UniteTemplateData holds the Unit-e specific template data
 // Implements interface{} passed to template as data
 type UniteTemplateData struct {
-	FinalizationState *FinalizationState
+	FinalizationConfig *FinalizationConfig
+	FinalizationState  *FinalizationState
+}
+
+// FinalizationConfig holds the JSON response to getfinalizationconfig message
+type FinalizationConfig struct {
+	EpochLength               int         `json:"epochLength"`
+	MinDepositSize            json.Number `json:"minDepositSize"`
+	DynastyLogoutDelay        int         `json:"dynastyLogoutDelay"`
+	WithdrawalEpochDelay      int         `json:"withdrawalEpochDelay"`
+	BountyFractionDenominator int         `json:"bountyFractionDenominator"`
+	SlashFractionMultiplier   int         `json:"slashFractionMultiplier"`
+	BaseInterestFactor        string      `json:"baseInterestFactor"`
+	BasePenaltyFactor         string      `json:"basePenaltyFactor"`
 }
 
 // FinalizationState holds the JSON response to getfinalizationstate message
@@ -81,6 +94,15 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 	return u, nil
 }
 
+type cmdGetFinalizationConfig struct {
+	Method string `json:"method"`
+}
+
+type resGetFinalizationConfig struct {
+	Error  *bchain.RPCError    `json:"error"`
+	Result *FinalizationConfig `json:"result"`
+}
+
 // Initialize initializes UniteRPC instance.
 func (u *UniteRPC) Initialize() error {
 	chainName, err := u.GetChainInfoAndInitializeMempool(u)
@@ -113,6 +135,23 @@ type cmdGetFinalizationState struct {
 type resGetFinalizationState struct {
 	Error  *bchain.RPCError   `json:"error"`
 	Result *FinalizationState `json:"result"`
+}
+
+func (u *UniteRPC) getFinalizationConfig() (*FinalizationConfig, error) {
+	var err error
+
+	res := resGetFinalizationConfig{}
+	req := cmdGetFinalizationConfig{Method: "getfinalizationconfig"}
+	err = u.Call(&req, &res)
+
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	return res.Result, err
 }
 
 func (u *UniteRPC) getFinalizationState() (*FinalizationState, error) {
@@ -220,9 +259,14 @@ func (h *UniteHTMLHandler) HandleCoinRequest(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return nil, nil, err
 	}
+	config, err := h.unite.getFinalizationConfig()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	data := UniteTemplateData{
-		FinalizationState: state,
+		FinalizationConfig: config,
+		FinalizationState:  state,
 	}
 
 	return h.t, data, err
