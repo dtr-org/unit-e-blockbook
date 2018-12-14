@@ -596,6 +596,6 @@ func (b *EthereumRPC) GetChainParser() bchain.BlockChainParser {
 	return b.Parser
 }
 
-func (b *EthereumRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
+func (b *EthereumRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
 	return nil
 }

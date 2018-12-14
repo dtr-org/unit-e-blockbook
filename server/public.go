@@ -35,7 +35,7 @@ type PublicServer struct {
 	txCache          *db.TxCache
 	chain            bchain.BlockChain
 	chainParser      bchain.BlockChainParser
-	coinHtmlHandler  bchain.CoinHtmlHandler
+	coinHTMLHandler  bchain.CoinHTMLHandler
 	api              *api.Worker
 	explorerURL      string
 	internalExplorer bool
@@ -78,7 +78,7 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		txCache:          txCache,
 		chain:            chain,
 		chainParser:      chain.GetChainParser(),
-		coinHtmlHandler:  chain.GetCoinHtmlHandler(),
+		coinHTMLHandler:  chain.GetCoinHTMLHandler(),
 		explorerURL:      explorerURL,
 		internalExplorer: explorerURL == "",
 		metrics:          metrics,
@@ -86,8 +86,8 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		debug:            debugMode,
 	}
 
-	if s.coinHtmlHandler != nil {
-		s.extraFuncMap = s.coinHtmlHandler.GetExtraFuncMap()
+	if s.coinHTMLHandler != nil {
+		s.extraFuncMap = s.coinHTMLHandler.GetExtraFuncMap()
 	}
 
 	s.templates, s.templatesFuncMap = parseTemplates(s.extraFuncMap)
@@ -129,7 +129,7 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 		serveMux.HandleFunc(path+"spending/", s.htmlPublicTemplateHandler(s.explorerSpendingTx))
 		serveMux.HandleFunc(path+"sendtx", s.htmlPublicTemplateHandler(s.explorerSendTx))
 		// Add coin specific handlers
-		if s.coinHtmlHandler != nil {
+		if s.coinHTMLHandler != nil {
 			serveMux.HandleFunc(path+"coin/", s.htmlCoinSpecificTemplateHandler())
 		}
 	} else {
@@ -262,8 +262,8 @@ func (s *PublicServer) newTemplateData() *TemplateData {
 		TOSLink:          api.Text.TOSLink,
 	}
 
-	if s.coinHtmlHandler != nil {
-		t.ExtraNavItems = s.coinHtmlHandler.GetExtraNavItems()
+	if s.coinHTMLHandler != nil {
+		t.ExtraNavItems = s.coinHTMLHandler.GetExtraNavItems()
 	}
 
 	return t
@@ -279,11 +279,12 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ptempl *template.Template
 		var data *TemplateData
-		var err error
 		defer func() {
 			if e := recover(); e != nil {
 				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
+
 				ptempl = s.templates[errorInternalTpl]
+
 				if s.debug {
 					data = s.newTemplateDataWithError(fmt.Sprint("Internal server error: recovered from panic ", e))
 				} else {
@@ -294,7 +295,7 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 			if ptempl != nil {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				// return 500 Internal Server Error with errorInternalTpl
-				if err != nil || (data == nil && ptempl != nil) {
+				if ptempl == s.templates[errorInternalTpl] {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 				if err := ptempl.ExecuteTemplate(w, "base.html", data); err != nil {
@@ -302,7 +303,7 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 				}
 			}
 		}()
-		ptempl, data, err = handler(w, r)
+		ptempl, data, err := handler(w, r)
 		if err != nil || (data == nil && ptempl != nil) {
 			ptempl = s.templates[errorInternalTpl]
 			if apiErr, ok := err.(*api.APIError); ok {
@@ -326,8 +327,8 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 }
 
 func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWriter, r *http.Request) {
-	wrapper_fn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
-		ptempl, extraData, err := s.coinHtmlHandler.HandleCoinRequest(w, r)
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+		ptempl, extraData, err := s.coinHTMLHandler.HandleCoinRequest(w, r)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -337,11 +338,11 @@ func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWri
 		return ptempl, data, err
 	}
 
-	return s.htmlTemplateHandler(wrapper_fn)
+	return s.htmlTemplateHandler(wrapperFn)
 }
 
 func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
-	wrapper_fn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
 		if s.debug {
 			// reload templates on each request
 			// to reflect changes during development
@@ -355,7 +356,7 @@ func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWri
 		return s.templates[t], data, err
 	}
 
-	return s.htmlTemplateHandler(wrapper_fn)
+	return s.htmlTemplateHandler(wrapperFn)
 }
 
 type tpl int

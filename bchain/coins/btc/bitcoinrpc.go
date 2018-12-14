@@ -878,6 +878,6 @@ func (b *BitcoinRPC) GetChainParser() bchain.BlockChainParser {
 	return b.Parser
 }
 
-func (b *BitcoinRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
+func (b *BitcoinRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
 	return nil
 }

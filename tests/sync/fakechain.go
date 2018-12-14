@@ -51,3 +51,7 @@ func (c *fakeBlockChain) GetBlock(hash string, height uint32) (*bchain.Block, er
 	b.Height = height
 	return b, nil
 }
+
+func (c *fakeBlockChain) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}

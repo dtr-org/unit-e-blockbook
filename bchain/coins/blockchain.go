@@ -242,6 +242,6 @@ func (c *blockChainWithMetrics) GetChainParser() bchain.BlockChainParser {
 	return c.b.GetChainParser()
 }
 
-func (c *blockChainWithMetrics) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
-	return c.b.GetCoinHtmlHandler()
+func (c *blockChainWithMetrics) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return c.b.GetCoinHTMLHandler()
 }

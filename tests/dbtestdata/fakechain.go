@@ -197,3 +197,7 @@ func (c *fakeBlockChain) GetMempoolEntry(txid string) (v *bchain.MempoolEntry, e
 func (c *fakeBlockChain) GetChainParser() bchain.BlockChainParser {
 	return c.parser
 }
+
+func (c *fakeBlockChain) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}

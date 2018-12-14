@@ -14,19 +14,23 @@ import (
 // UniteRPC is the Unit-e coin's RPC handler
 type UniteRPC struct {
 	*btc.BitcoinRPC
-	HtmlHandler UniteHtmlHandler
+	HTMLHandler UniteHTMLHandler
 	txTypesMap  map[uint32]string
 }
 
-type UniteHtmlHandler struct {
+// UniteHTMLHandler handles Unit-e specific HTML requests
+type UniteHTMLHandler struct {
 	unite *UniteRPC
 	t     *template.Template
 }
 
+// UniteTemplateData holds the Unit-e specific template data
+// Implements interface{} passed to template as data
 type UniteTemplateData struct {
 	FinalizationState *FinalizationState
 }
 
+// FinalizationState holds the JSON response to getfinalizationstate message
 type FinalizationState struct {
 	CurrentEpoch       int `json:"currentEpoch"`
 	CurrentDynasty     int `json:"currentDynasty"`
@@ -40,8 +44,9 @@ func (u *UniteRPC) txTypeToString(t uint32) string {
 	return u.txTypesMap[t]
 }
 
-func NewUniteHtmlHandler(u *UniteRPC) UniteHtmlHandler {
-	h := UniteHtmlHandler{
+// NewUniteHTMLHandler creates the Unit-e's HTML handler and populates it's templates
+func NewUniteHTMLHandler(u *UniteRPC) UniteHTMLHandler {
+	h := UniteHTMLHandler{
 		unite: u,
 	}
 
@@ -60,7 +65,7 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 	}
 	u.RPCMarshaler = btc.JSONMarshalerV1{}
 	u.ChainConfig.SupportsEstimateSmartFee = false
-	u.HtmlHandler = NewUniteHtmlHandler(u)
+	u.HTMLHandler = NewUniteHTMLHandler(u)
 
 	u.txTypesMap = map[uint32]string{
 		0: "Standard",
@@ -190,23 +195,27 @@ func (u *UniteRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error) {
 	return nil, errors.New("unit-e rpc: GetMempoolEntry: not implemented")
 }
 
-func (u *UniteRPC) GetCoinHtmlHandler() bchain.CoinHtmlHandler {
-	return &u.HtmlHandler
+// GetCoinHTMLHandler returns the HTML handler
+func (u *UniteRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return &u.HTMLHandler
 }
 
-func (h *UniteHtmlHandler) GetExtraNavItems() map[string]string {
+// GetExtraNavItems returns the extra navigation bar items
+func (h *UniteHTMLHandler) GetExtraNavItems() map[string]string {
 	return map[string]string{
 		"Finalization": "/coin/",
 	}
 }
 
-func (h *UniteHtmlHandler) GetExtraFuncMap() template.FuncMap {
+// GetExtraFuncMap returns the extra functions to be registered in templates
+func (h *UniteHTMLHandler) GetExtraFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"formatTxType": h.unite.txTypeToString,
 	}
 }
 
-func (h *UniteHtmlHandler) HandleCoinRequest(w http.ResponseWriter, r *http.Request) (*template.Template, interface{}, error) {
+// HandleCoinRequest returns template for given path and it's data
+func (h *UniteHTMLHandler) HandleCoinRequest(w http.ResponseWriter, r *http.Request) (*template.Template, interface{}, error) {
 	state, err := h.unite.getFinalizationState()
 	if err != nil {
 		return nil, nil, err

@@ -149,8 +149,8 @@ type OnNewBlockFunc func(hash string, height uint32)
 // OnNewTxAddrFunc is used to send notification about a new transaction/address
 type OnNewTxAddrFunc func(txid string, desc AddressDescriptor, isOutput bool)
 
-// CoinHtmlHandler defines common interface to coin specific html handler
-type CoinHtmlHandler interface {
+// CoinHTMLHandler defines common interface to coin specific html handler
+type CoinHTMLHandler interface {
 	GetExtraNavItems() map[string]string
 	GetExtraFuncMap() template.FuncMap
 	HandleCoinRequest(http.ResponseWriter, *http.Request) (*template.Template, interface{}, error)
@@ -188,7 +188,7 @@ type BlockChain interface {
 	GetMempoolEntry(txid string) (*MempoolEntry, error)
 	// parser
 	GetChainParser() BlockChainParser
-	GetCoinHtmlHandler() CoinHtmlHandler
+	GetCoinHTMLHandler() CoinHTMLHandler
 }
 
 // BlockChainParser defines common interface to parsing and conversions of block chain data
