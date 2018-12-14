@@ -5,7 +5,6 @@ package ute
 import (
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
-	"blockbook/bchain/coins/ute"
 	"bytes"
 	"encoding/hex"
 	"math/big"
@@ -109,7 +108,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestParseOpReturn(t *testing.T) {
-	parser := ute.NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{})
+	parser := NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{})
 
 	// OP_RETURN
 	opReturnHexString := "6a"
@@ -118,12 +117,12 @@ func TestParseOpReturn(t *testing.T) {
 		t.Errorf("Unexpected error %s", err)
 		return
 	}
-	if !ute.IsOpReturnScript(opReturnHexBytes) {
+	if !IsOpReturnScript(opReturnHexBytes) {
 		t.Errorf("Script should be OpReturn script")
 		return
 	}
 
-	opRetAddr := ute.TryParseOPReturn(opReturnHexBytes)
+	opRetAddr := TryParseOPReturn(opReturnHexBytes)
 	if opRetAddr != "OP_RETURN" {
 		t.Errorf("OpRetAddr is incorrect %s", opRetAddr)
 		return
@@ -136,12 +135,12 @@ func TestParseOpReturn(t *testing.T) {
 		t.Errorf("Unexpected error %s", err)
 		return
 	}
-	if !ute.IsOpReturnScript(opReturnHexBytes) {
+	if !IsOpReturnScript(opReturnHexBytes) {
 		t.Errorf("Script should be OpReturn script")
 		return
 	}
 
-	opRetAddr = ute.TryParseOPReturn(opReturnHexBytes)
+	opRetAddr = TryParseOPReturn(opReturnHexBytes)
 	if opRetAddr != "OP_RETURN aa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
 		t.Errorf("OpRetAddr is incorrect %s", opRetAddr)
 		return
@@ -200,7 +199,7 @@ func TestParseOpReturn(t *testing.T) {
 func TestGetAddrDesc(t *testing.T) {
 	type args struct {
 		tx           bchain.Tx
-		parser       *ute.UniteParser
+		parser       *UniteParser
 		wantsReverse bool
 	}
 	tests := []struct {
@@ -211,7 +210,7 @@ func TestGetAddrDesc(t *testing.T) {
 			name: "ute-1",
 			args: args{
 				tx:           testTx1,
-				parser:       ute.NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{}),
+				parser:       NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{}),
 				wantsReverse: true,
 			},
 		},
@@ -219,7 +218,7 @@ func TestGetAddrDesc(t *testing.T) {
 			name: "ute-2",
 			args: args{
 				tx:           testTx2,
-				parser:       ute.NewUniteParser(ute.GetChainParams("regtest"), &btc.Configuration{}),
+				parser:       NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
 				wantsReverse: false,
 			},
 		},
@@ -260,7 +259,7 @@ func TestPackTx(t *testing.T) {
 		tx        bchain.Tx
 		height    uint32
 		blockTime int64
-		parser    *ute.UniteParser
+		parser    *UniteParser
 	}
 	tests := []struct {
 		name    string
@@ -274,7 +273,7 @@ func TestPackTx(t *testing.T) {
 				tx:        testTx1,
 				height:    292272,
 				blockTime: 1544455142,
-				parser:    ute.NewUniteParser(ute.GetChainParams("main"), &btc.Configuration{}),
+				parser:    NewUniteParser(GetChainParams("main"), &btc.Configuration{}),
 			},
 			want:    "",
 			wantErr: true,
@@ -285,7 +284,7 @@ func TestPackTx(t *testing.T) {
 				tx:        testTx2,
 				height:    292217,
 				blockTime: 1544455142,
-				parser:    ute.NewUniteParser(ute.GetChainParams("main"), &btc.Configuration{}),
+				parser:    NewUniteParser(GetChainParams("main"), &btc.Configuration{}),
 			},
 			want:    testTxPacked2,
 			wantErr: false,
@@ -309,7 +308,7 @@ func TestPackTx(t *testing.T) {
 func TestUnpackTx(t *testing.T) {
 	type args struct {
 		packedTx string
-		parser   *ute.UniteParser
+		parser   *UniteParser
 	}
 	tests := []struct {
 		name    string
@@ -322,7 +321,7 @@ func TestUnpackTx(t *testing.T) {
 			name: "ute-1",
 			args: args{
 				packedTx: testTxPacked1,
-				parser:   ute.NewUniteParser(ute.GetChainParams("main"), &btc.Configuration{}),
+				parser:   NewUniteParser(GetChainParams("main"), &btc.Configuration{}),
 			},
 			want:    nil,
 			want1:   0,
@@ -332,7 +331,7 @@ func TestUnpackTx(t *testing.T) {
 			name: "ute-2",
 			args: args{
 				packedTx: testTxPacked2,
-				parser:   ute.NewUniteParser(ute.GetChainParams("main"), &btc.Configuration{}),
+				parser:   NewUniteParser(GetChainParams("main"), &btc.Configuration{}),
 			},
 			want:    &testTx2,
 			want1:   292217,
