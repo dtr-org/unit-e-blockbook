@@ -180,6 +180,7 @@ func verifyAfterUTXOBlock1(t *testing.T, d *RocksDB, afterDisconnect bool) {
 			dbtestdata.TxidB1T1,
 			varuintToHex(225493) +
 				"00" +
+				"00" +
 				"02" +
 				addressToPubKeyHexWithLength(dbtestdata.Addr1, t, d) + bigintToHex(dbtestdata.SatB1T1A1) +
 				addressToPubKeyHexWithLength(dbtestdata.Addr2, t, d) + bigintToHex(dbtestdata.SatB1T1A2),
@@ -188,6 +189,7 @@ func verifyAfterUTXOBlock1(t *testing.T, d *RocksDB, afterDisconnect bool) {
 		keyPair{
 			dbtestdata.TxidB1T2,
 			varuintToHex(225493) +
+				"00" +
 				"00" +
 				"03" +
 				addressToPubKeyHexWithLength(dbtestdata.Addr3, t, d) + bigintToHex(dbtestdata.SatB1T2A3) +
@@ -274,6 +276,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 			dbtestdata.TxidB1T1,
 			varuintToHex(225493) +
 				"00" +
+				"00" +
 				"02" +
 				addressToPubKeyHexWithLength(dbtestdata.Addr1, t, d) + bigintToHex(dbtestdata.SatB1T1A1) +
 				spentAddressToPubKeyHexWithLength(dbtestdata.Addr2, t, d) + bigintToHex(dbtestdata.SatB1T1A2),
@@ -282,6 +285,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 		keyPair{
 			dbtestdata.TxidB1T2,
 			varuintToHex(225493) +
+				"00" +
 				"00" +
 				"03" +
 				spentAddressToPubKeyHexWithLength(dbtestdata.Addr3, t, d) + bigintToHex(dbtestdata.SatB1T2A3) +
@@ -292,6 +296,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 		keyPair{
 			dbtestdata.TxidB2T1,
 			varuintToHex(225494) +
+				"00" +
 				"02" +
 				inputAddressToPubKeyHexWithLength(dbtestdata.Addr3, t, d) + bigintToHex(dbtestdata.SatB1T2A3) +
 				inputAddressToPubKeyHexWithLength(dbtestdata.Addr2, t, d) + bigintToHex(dbtestdata.SatB1T1A2) +
@@ -303,6 +308,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 		keyPair{
 			dbtestdata.TxidB2T2,
 			varuintToHex(225494) +
+				"00" +
 				"02" +
 				inputAddressToPubKeyHexWithLength(dbtestdata.Addr6, t, d) + bigintToHex(dbtestdata.SatB2T1A6) +
 				inputAddressToPubKeyHexWithLength(dbtestdata.Addr4, t, d) + bigintToHex(dbtestdata.SatB1T2A4) +
@@ -314,6 +320,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 		keyPair{
 			dbtestdata.TxidB2T3,
 			varuintToHex(225494) +
+				"00" +
 				"01" +
 				inputAddressToPubKeyHexWithLength(dbtestdata.Addr5, t, d) + bigintToHex(dbtestdata.SatB1T2A5) +
 				"01" +
@@ -323,6 +330,7 @@ func verifyAfterUTXOBlock2(t *testing.T, d *RocksDB) {
 		keyPair{
 			dbtestdata.TxidB2T4,
 			varuintToHex(225494) +
+				"00" +
 				"01" + inputAddressToPubKeyHexWithLength("", t, d) + bigintToHex(dbtestdata.SatZero) +
 				"02" +
 				addressToPubKeyHexWithLength(dbtestdata.AddrA, t, d) + bigintToHex(dbtestdata.SatB2T4AA) +
@@ -773,9 +781,10 @@ func Test_packTxAddresses_unpackTxAddresses(t *testing.T) {
 	}{
 		{
 			name: "1",
-			hex:  "7b0216001443aac20a116e09ea4f7914be1c55e4c17aa600b70016001454633aa8bd2e552bd4e89c01e73c1b7905eb58460811207cb68a199872012d001443aac20a116e09ea4f7914be1c55e4c17aa600b70101",
+			hex:  "7b000216001443aac20a116e09ea4f7914be1c55e4c17aa600b70016001454633aa8bd2e552bd4e89c01e73c1b7905eb58460811207cb68a199872012d001443aac20a116e09ea4f7914be1c55e4c17aa600b70101",
 			data: &TxAddresses{
 				Height: 123,
+				TxType: 0,
 				Inputs: []TxInput{
 					{
 						AddrDesc: addressToAddrDesc("tb1qgw4vyzs3dcy75nmezjlpc40yc9a2vq9hghdyt2", parser),
@@ -797,9 +806,10 @@ func Test_packTxAddresses_unpackTxAddresses(t *testing.T) {
 		},
 		{
 			name: "2",
-			hex:  "e0390317a9149eb21980dc9d413d8eac27314938b9da920ee53e8705021918f2c017a91409f70b896169c37981d2b54b371df0d81a136a2c870501dd7e28c017a914e371782582a4addb541362c55565d2cdf56f6498870501a1e35ec0052fa9141d9ca71efa36d814424ea6ca1437e67287aebe348705012aadcac02ea91424fbc77cdc62702ade74dcf989c15e5d3f9240bc870501664894c02fa914afbfb74ee994c7d45f6698738bc4226d065266f7870501a1e35ec03276a914d2a37ce20ac9ec4f15dd05a7c6e8e9fbdb99850e88ac043b9943603376a9146b2044146a4438e6e5bfbc65f147afeb64d14fbb88ac05012a05f200",
+			hex:  "e039060317a9149eb21980dc9d413d8eac27314938b9da920ee53e8705021918f2c017a91409f70b896169c37981d2b54b371df0d81a136a2c870501dd7e28c017a914e371782582a4addb541362c55565d2cdf56f6498870501a1e35ec0052fa9141d9ca71efa36d814424ea6ca1437e67287aebe348705012aadcac02ea91424fbc77cdc62702ade74dcf989c15e5d3f9240bc870501664894c02fa914afbfb74ee994c7d45f6698738bc4226d065266f7870501a1e35ec03276a914d2a37ce20ac9ec4f15dd05a7c6e8e9fbdb99850e88ac043b9943603376a9146b2044146a4438e6e5bfbc65f147afeb64d14fbb88ac05012a05f200",
 			data: &TxAddresses{
 				Height: 12345,
+				TxType: 3,
 				Inputs: []TxInput{
 					{
 						AddrDesc: addressToAddrDesc("2N7iL7AvS4LViugwsdjTB13uN4T7XhV1bCP", parser),
@@ -843,9 +853,10 @@ func Test_packTxAddresses_unpackTxAddresses(t *testing.T) {
 		},
 		{
 			name: "empty address",
-			hex:  "baef9a1501000204d2020002162e010162",
+			hex:  "baef9a150001000204d2020002162e010162",
 			data: &TxAddresses{
 				Height: 123456789,
+				TxType: 0,
 				Inputs: []TxInput{
 					{
 						AddrDesc: []byte{},
@@ -867,7 +878,7 @@ func Test_packTxAddresses_unpackTxAddresses(t *testing.T) {
 		},
 		{
 			name: "empty",
-			hex:  "000000",
+			hex:  "00000000",
 			data: &TxAddresses{
 				Inputs:  []TxInput{},
 				Outputs: []TxOutput{},
