@@ -82,7 +82,7 @@ func NewUniteRPC(config json.RawMessage, pushHandler func(bchain.NotificationTyp
 
 	u.txTypesMap = map[uint32]string{
 		0: "Standard",
-		1: "Coinstake",
+		1: "Coinbase",
 		2: "Deposit",
 		3: "Vote",
 		4: "Logout",
