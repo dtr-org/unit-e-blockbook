@@ -277,13 +277,13 @@ func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
 
 func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var ptempl *template.Template
+		var templateToRender *template.Template
 		var data *TemplateData
 		defer func() {
 			if e := recover(); e != nil {
 				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
 
-				ptempl = s.templates[errorInternalTpl]
+				templateToRender = s.templates[errorInternalTpl]
 
 				if s.debug {
 					data = s.newTemplateDataWithError(fmt.Sprint("Internal server error: recovered from panic ", e))
@@ -291,26 +291,26 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 					data = s.newTemplateDataWithError("Internal server error")
 				}
 			}
-			// ptempl == nil means the handler completely handled the request
-			if ptempl != nil {
+			// templateToRender == nil means the handler completely handled the request
+			if templateToRender != nil {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				// return 500 Internal Server Error with errorInternalTpl
-				if ptempl == s.templates[errorInternalTpl] {
+				if templateToRender == s.templates[errorInternalTpl] {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-				if err := ptempl.ExecuteTemplate(w, "base.html", data); err != nil {
+				if err := templateToRender.ExecuteTemplate(w, "base.html", data); err != nil {
 					glog.Error(err)
 				}
 			}
 		}()
-		ptempl, data, err := handler(w, r)
-		if err != nil || (data == nil && ptempl != nil) {
-			ptempl = s.templates[errorInternalTpl]
+		templateToRender, data, err := handler(w, r)
+		if err != nil || (data == nil && templateToRender != nil) {
+			templateToRender = s.templates[errorInternalTpl]
 			if apiErr, ok := err.(*api.APIError); ok {
 				data = s.newTemplateData()
 				data.Error = apiErr
 				if apiErr.Public {
-					ptempl = s.templates[errorTpl]
+					templateToRender = s.templates[errorTpl]
 				}
 			} else {
 				if err != nil {
@@ -328,14 +328,14 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 
 func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWriter, r *http.Request) {
 	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
-		ptempl, extraData, err := s.coinHTMLHandler.HandleCoinRequest(w, r)
+		templateToRender, extraData, err := s.coinHTMLHandler.HandleCoinRequest(w, r)
 		if err != nil {
 			return nil, nil, err
 		}
-		ptempl.Funcs(s.templatesFuncMap)
+		templateToRender.Funcs(s.templatesFuncMap)
 		data := s.newTemplateData()
 		data.ExtraData = extraData
-		return ptempl, data, err
+		return templateToRender, data, err
 	}
 
 	return s.htmlTemplateHandler(wrapperFn)

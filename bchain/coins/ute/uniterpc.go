@@ -33,14 +33,14 @@ type UniteTemplateData struct {
 
 // FinalizationConfig holds the JSON response to getfinalizationconfig message
 type FinalizationConfig struct {
-	EpochLength               int         `json:"epochLength"`
-	MinDepositSize            json.Number `json:"minDepositSize"`
-	DynastyLogoutDelay        int         `json:"dynastyLogoutDelay"`
-	WithdrawalEpochDelay      int         `json:"withdrawalEpochDelay"`
-	BountyFractionDenominator int         `json:"bountyFractionDenominator"`
-	SlashFractionMultiplier   int         `json:"slashFractionMultiplier"`
-	BaseInterestFactor        string      `json:"baseInterestFactor"`
-	BasePenaltyFactor         string      `json:"basePenaltyFactor"`
+	EpochLength               int    `json:"epochLength"`
+	MinDepositSize            int64  `json:"minDepositSize"`
+	DynastyLogoutDelay        int    `json:"dynastyLogoutDelay"`
+	WithdrawalEpochDelay      int    `json:"withdrawalEpochDelay"`
+	BountyFractionDenominator int    `json:"bountyFractionDenominator"`
+	SlashFractionMultiplier   int    `json:"slashFractionMultiplier"`
+	BaseInterestFactor        string `json:"baseInterestFactor"`
+	BasePenaltyFactor         string `json:"basePenaltyFactor"`
 }
 
 // FinalizationState holds the JSON response to getfinalizationstate message
@@ -53,8 +53,8 @@ type FinalizationState struct {
 }
 
 func (u *UniteRPC) txTypeToString(t uint32) string {
-	// will return empty string if t is not in the map
-	return u.txTypesMap[t]
+	v, _ := u.txTypesMap[t]
+	return v
 }
 
 // NewUniteHTMLHandler creates the Unit-e's HTML handler and populates it's templates
