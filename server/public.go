@@ -43,7 +43,6 @@ type PublicServer struct {
 	is               *common.InternalState
 	templates        []*template.Template
 	templatesFuncMap template.FuncMap
-	extraFuncMap     template.FuncMap
 	debug            bool
 }
 
@@ -87,10 +86,12 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 	}
 
 	if s.coinHTMLHandler != nil {
-		s.extraFuncMap = s.coinHTMLHandler.GetExtraFuncMap()
+		s.templatesFuncMap = getTemplateFuncMap(s.coinHTMLHandler.GetExtraFuncMap())
+	} else {
+		s.templatesFuncMap = getTemplateFuncMap(nil)
 	}
 
-	s.templates, s.templatesFuncMap = parseTemplates(s.extraFuncMap)
+	s.templates = parseTemplates(s.templatesFuncMap)
 
 	// map only basic functions, the rest is enabled by method MapFullPublicInterface
 	serveMux.Handle(path+"favicon.ico", http.FileServer(http.Dir("./static/")))
@@ -346,8 +347,7 @@ func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWri
 		if s.debug {
 			// reload templates on each request
 			// to reflect changes during development
-			// ignore funcMap
-			s.templates, _ = parseTemplates(s.extraFuncMap)
+			s.templates = parseTemplates(s.templatesFuncMap)
 		}
 		t, data, err := handler(w, r)
 		if t == noTpl {
@@ -400,7 +400,7 @@ type TemplateData struct {
 	ExtraData        interface{}
 }
 
-func parseTemplates(extraFuncs template.FuncMap) ([]*template.Template, template.FuncMap) {
+func getTemplateFuncMap(extraFuncs template.FuncMap) template.FuncMap {
 	templateFuncMap := template.FuncMap{
 		"formatTime":          formatTime,
 		"formatUnixTime":      formatUnixTime,
@@ -415,6 +415,10 @@ func parseTemplates(extraFuncs template.FuncMap) ([]*template.Template, template
 		templateFuncMap[k] = v
 	}
 
+	return templateFuncMap
+}
+
+func parseTemplates(templateFuncMap template.FuncMap) []*template.Template {
 	t := make([]*template.Template, tplCount)
 	t[errorTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))
 	t[errorInternalTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))
@@ -424,7 +428,7 @@ func parseTemplates(extraFuncs template.FuncMap) ([]*template.Template, template
 	t[blocksTpl] = template.Must(template.New("blocks").Funcs(templateFuncMap).ParseFiles("./static/templates/blocks.html", "./static/templates/paging.html", "./static/templates/base.html"))
 	t[blockTpl] = template.Must(template.New("block").Funcs(templateFuncMap).ParseFiles("./static/templates/block.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html"))
 	t[sendTransactionTpl] = template.Must(template.New("block").Funcs(templateFuncMap).ParseFiles("./static/templates/sendtx.html", "./static/templates/base.html"))
-	return t, templateFuncMap
+	return t
 }
 
 func formatUnixTime(ut int64) string {
