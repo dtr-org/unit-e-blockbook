@@ -15,6 +15,8 @@ import (
 // Script opcodes
 const (
 	OpPushdata1 byte = 0x4c
+	OpPushdata2 byte = 0x4d
+	OpPushdata4 byte = 0x4e
 	OpTrue      byte = 0x51
 	OpIf        byte = 0x63
 	OpNotif     byte = 0x64
@@ -68,6 +70,14 @@ type UniteParser struct {
 	Params     *chaincfg.Params
 }
 
+// Vote data
+type Vote struct {
+	ValidatorAddress string
+	TargetHash       string
+	SourceEpoch      uint32
+	TargetEpoch      uint32
+}
+
 // NewUniteParser returns new UniteParser instance
 func NewUniteParser(params *chaincfg.Params, c *btc.Configuration) *UniteParser {
 	p := &UniteParser{
@@ -102,6 +112,121 @@ func GetChainParams(chain string) *chaincfg.Params {
 	default:
 		return &MainNetParams
 	}
+}
+
+// GetVaruint returns decoded int from byte array
+func GetVaruint(arr []byte) uint64 {
+	l := len(arr)
+	if l == 0 {
+		// treating as empty
+		return 0
+	}
+
+	var r uint64
+	var mod uint64 = 1 << uint64(8*(l-1))
+	for _, b := range arr {
+		r |= uint64(b) * mod
+		mod = mod >> 8
+	}
+
+	return r
+}
+
+// GetOp parses script at given offset and returns new offset and the bytes read
+func GetOp(script []byte, ofs uint64) (uint64, []byte, error) {
+	scriptLen := uint64(len(script))
+	if scriptLen <= ofs {
+		return 0, []byte{}, errors.New("invalid script, offset outside bounds")
+	}
+
+	opcode := script[ofs]
+	if opcode <= OpPushdata4 {
+		var nSize uint64
+		var dataStart uint64 = ofs
+		if opcode < OpPushdata1 {
+			dataStart = ofs + 1
+			nSize = uint64(opcode)
+		} else {
+			if opcode == OpPushdata1 {
+				dataStart = ofs + 2
+			} else if opcode == OpPushdata2 {
+				dataStart = ofs + 3
+			} else if opcode == OpPushdata4 {
+				dataStart = ofs + 5
+			}
+			if scriptLen < dataStart {
+				return 0, []byte{}, errors.New("invalid script, not enough elements after OP_PUSHDATA")
+			}
+			nSize = GetVaruint(script[ofs+1 : dataStart])
+		}
+
+		if scriptLen < dataStart+nSize {
+			return 0, []byte{}, errors.New("invalid script, not enough elements")
+		}
+
+		return dataStart + nSize, script[dataStart : dataStart+nSize], nil
+	}
+
+	return ofs + 1, []byte{opcode}, nil
+}
+
+// DecodeVote returns decoded vote from script
+func DecodeVote(voteScript []byte) *Vote {
+	// read voteSig
+	ofs, _, err := GetOp(voteScript, 0)
+	if err != nil {
+		return nil
+	}
+
+	// read validatorAddress
+	ofs, validatorAddress, err := GetOp(voteScript, ofs)
+	if err != nil {
+		return nil
+	}
+
+	// read targetHash
+	ofs, targetHash, err := GetOp(voteScript, ofs)
+	if err != nil {
+		return nil
+	}
+
+	// read sourceEpochVec
+	ofs, sourceEpochV, err := GetOp(voteScript, ofs)
+	if err != nil {
+		return nil
+	}
+	sourceEpoch := GetVaruint(sourceEpochV)
+
+	// read targetEpochVec
+	ofs, targetEpochV, err := GetOp(voteScript, ofs)
+	if err != nil {
+		return nil
+	}
+	targetEpoch := GetVaruint(targetEpochV)
+
+	return &Vote{ValidatorAddress: hex.EncodeToString(validatorAddress), TargetHash: hex.EncodeToString(targetHash), SourceEpoch: uint32(sourceEpoch), TargetEpoch: uint32(targetEpoch)}
+}
+
+// ExtractVoteFromSignature reads and decodes vote from signature
+func ExtractVoteFromSignature(sigHex string) *Vote {
+	script, err := hex.DecodeString(sigHex)
+	if err != nil {
+		return nil
+	}
+
+	// read txSig (ignored)
+	ofs, _, err := GetOp(script, 0)
+	if err != nil {
+		return nil
+	}
+
+	// read vote
+	ofs, vote, err := GetOp(script, ofs)
+	if err != nil {
+		return nil
+	}
+
+	return DecodeVote(vote)
 }
 
 // PackTx packs transaction to byte array using protobuf
