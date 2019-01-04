@@ -1,0 +1,71 @@
+{{define "specific"}}{{ $fc := .ExtraData.FinalizationConfig }}{{ $fs := .ExtraData.FinalizationState }}
+<h1>Blochchain Status</h1>
+<div class="row">
+    <div class="col-md-6">
+        <h3>Finalization Configuration</h3>
+        <table class="table data-table">
+            <tbody>
+                <tr>
+                    <td style="width: 40%;">Epoch Length</td>
+                    <td class="data">{{$fc.EpochLength}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Minimal Deposit Size</td>
+                    <td class="data">{{$fc.MinDepositSize}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Logout Delay</td>
+                    <td class="data">{{$fc.DynastyLogoutDelay}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Withdrawal Delay</td>
+                    <td class="data">{{$fc.WithdrawalEpochDelay}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Bounty Fraction Denominator</td>
+                    <td class="data">{{$fc.BountyFractionDenominator}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Slash Fraction Multiplier</td>
+                    <td class="data">{{$fc.SlashFractionMultiplier}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Base Interest Factor</td>
+                    <td class="data">{{$fc.BaseInterestFactor}}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Base Penalty Factor</td>
+                    <td class="data">{{$fc.BasePenaltyFactor}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h3>Finalization State</h3>
+        <table class="table data-table">
+            <tbody>
+                <tr>
+                    <td style="width: 40%;">Current Epoch</td>
+                    <td class="data">{{ $fs.CurrentEpoch }}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Current Dynasty</td>
+                    <td class="data">{{ $fs.CurrentDynasty }}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Last Finalized Epoch</td>
+                    <td class="data">{{ $fs.LastFinalizedEpoch }}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Last Justified Epoch</td>
+                    <td class="data">{{ $fs.LastJustifiedEpoch }}</td>
+                </tr>
+                <tr>
+                    <td style="width: 40%;">Validators</td>
+                    <td class="data">{{ $fs.Validators }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

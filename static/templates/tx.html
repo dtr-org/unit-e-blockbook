@@ -10,7 +10,7 @@
             {{if $tx.TxType}}
             <tr>
                 <td style="width: 25%;">Transaction Type</td>
-                <td class="data">{{$tx.TxType}}</td>
+                <td class="data">{{formatTxType $tx.TxType}}</td>
             </tr>{{end}}
             {{if $tx.Confirmations}}
             <tr>

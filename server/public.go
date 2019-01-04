@@ -35,12 +35,14 @@ type PublicServer struct {
 	txCache          *db.TxCache
 	chain            bchain.BlockChain
 	chainParser      bchain.BlockChainParser
+	coinHTMLHandler  bchain.CoinHTMLHandler
 	api              *api.Worker
 	explorerURL      string
 	internalExplorer bool
 	metrics          *common.Metrics
 	is               *common.InternalState
 	templates        []*template.Template
+	templatesFuncMap template.FuncMap
 	debug            bool
 }
 
@@ -75,19 +77,27 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		txCache:          txCache,
 		chain:            chain,
 		chainParser:      chain.GetChainParser(),
+		coinHTMLHandler:  chain.GetCoinHTMLHandler(),
 		explorerURL:      explorerURL,
 		internalExplorer: explorerURL == "",
 		metrics:          metrics,
 		is:               is,
 		debug:            debugMode,
 	}
-	s.templates = parseTemplates()
+
+	if s.coinHTMLHandler != nil {
+		s.templatesFuncMap = getTemplateFuncMap(s.coinHTMLHandler.GetExtraFuncMap())
+	} else {
+		s.templatesFuncMap = getTemplateFuncMap(nil)
+	}
+
+	s.templates = parseTemplates(s.templatesFuncMap)
 
 	// map only basic functions, the rest is enabled by method MapFullPublicInterface
 	serveMux.Handle(path+"favicon.ico", http.FileServer(http.Dir("./static/")))
 	serveMux.Handle(path+"static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	// default handler
-	serveMux.HandleFunc(path, s.htmlTemplateHandler(s.explorerIndex))
+	serveMux.HandleFunc(path, s.htmlPublicTemplateHandler(s.explorerIndex))
 	// default API handler
 	serveMux.HandleFunc(path+"api/", s.jsonHandler(s.apiIndex))
 
@@ -112,13 +122,17 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 	serveMux.Handle(path+"test.html", http.FileServer(http.Dir("./static/")))
 	if s.internalExplorer {
 		// internal explorer handlers
-		serveMux.HandleFunc(path+"tx/", s.htmlTemplateHandler(s.explorerTx))
-		serveMux.HandleFunc(path+"address/", s.htmlTemplateHandler(s.explorerAddress))
-		serveMux.HandleFunc(path+"search/", s.htmlTemplateHandler(s.explorerSearch))
-		serveMux.HandleFunc(path+"blocks", s.htmlTemplateHandler(s.explorerBlocks))
-		serveMux.HandleFunc(path+"block/", s.htmlTemplateHandler(s.explorerBlock))
-		serveMux.HandleFunc(path+"spending/", s.htmlTemplateHandler(s.explorerSpendingTx))
-		serveMux.HandleFunc(path+"sendtx", s.htmlTemplateHandler(s.explorerSendTx))
+		serveMux.HandleFunc(path+"tx/", s.htmlPublicTemplateHandler(s.explorerTx))
+		serveMux.HandleFunc(path+"address/", s.htmlPublicTemplateHandler(s.explorerAddress))
+		serveMux.HandleFunc(path+"search/", s.htmlPublicTemplateHandler(s.explorerSearch))
+		serveMux.HandleFunc(path+"blocks", s.htmlPublicTemplateHandler(s.explorerBlocks))
+		serveMux.HandleFunc(path+"block/", s.htmlPublicTemplateHandler(s.explorerBlock))
+		serveMux.HandleFunc(path+"spending/", s.htmlPublicTemplateHandler(s.explorerSpendingTx))
+		serveMux.HandleFunc(path+"sendtx", s.htmlPublicTemplateHandler(s.explorerSendTx))
+		// Add coin specific handlers
+		if s.coinHTMLHandler != nil {
+			serveMux.HandleFunc(path+"coin/", s.htmlCoinSpecificTemplateHandler())
+		}
 	} else {
 		// redirect to wallet requests for tx and address, possibly to external site
 		serveMux.HandleFunc(path+"tx/", s.txRedirect)
@@ -241,13 +255,19 @@ func (s *PublicServer) jsonHandler(handler func(r *http.Request) (interface{}, e
 }
 
 func (s *PublicServer) newTemplateData() *TemplateData {
-	return &TemplateData{
+	t := &TemplateData{
 		CoinName:         s.is.Coin,
 		CoinShortcut:     s.is.CoinShortcut,
 		CoinLabel:        s.is.CoinLabel,
 		InternalExplorer: s.internalExplorer && !s.is.InitialSync,
 		TOSLink:          api.Text.TOSLink,
 	}
+
+	if s.coinHTMLHandler != nil {
+		t.ExtraNavItems = s.coinHTMLHandler.GetExtraNavItems()
+	}
+
+	return t
 }
 
 func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
@@ -256,46 +276,42 @@ func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
 	return td
 }
 
-func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
+func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var t tpl
+		var templateToRender *template.Template
 		var data *TemplateData
-		var err error
 		defer func() {
 			if e := recover(); e != nil {
 				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
-				t = errorInternalTpl
+
+				templateToRender = s.templates[errorInternalTpl]
+
 				if s.debug {
 					data = s.newTemplateDataWithError(fmt.Sprint("Internal server error: recovered from panic ", e))
 				} else {
 					data = s.newTemplateDataWithError("Internal server error")
 				}
 			}
-			// noTpl means the handler completely handled the request
-			if t != noTpl {
+			// templateToRender == nil means the handler completely handled the request
+			if templateToRender != nil {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				// return 500 Internal Server Error with errorInternalTpl
-				if t == errorInternalTpl {
+				if templateToRender == s.templates[errorInternalTpl] {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-				if err := s.templates[t].ExecuteTemplate(w, "base.html", data); err != nil {
+				if err := templateToRender.ExecuteTemplate(w, "base.html", data); err != nil {
 					glog.Error(err)
 				}
 			}
 		}()
-		if s.debug {
-			// reload templates on each request
-			// to reflect changes during development
-			s.templates = parseTemplates()
-		}
-		t, data, err = handler(w, r)
-		if err != nil || (data == nil && t != noTpl) {
-			t = errorInternalTpl
+		templateToRender, data, err := handler(w, r)
+		if err != nil || (data == nil && templateToRender != nil) {
+			templateToRender = s.templates[errorInternalTpl]
 			if apiErr, ok := err.(*api.APIError); ok {
 				data = s.newTemplateData()
 				data.Error = apiErr
 				if apiErr.Public {
-					t = errorTpl
+					templateToRender = s.templates[errorTpl]
 				}
 			} else {
 				if err != nil {
@@ -309,6 +325,38 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 			}
 		}
 	}
+}
+
+func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWriter, r *http.Request) {
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+		templateToRender, extraData, err := s.coinHTMLHandler.HandleCoinRequest(w, r)
+		if err != nil {
+			return nil, nil, err
+		}
+		templateToRender.Funcs(s.templatesFuncMap)
+		data := s.newTemplateData()
+		data.ExtraData = extraData
+		return templateToRender, data, err
+	}
+
+	return s.htmlTemplateHandler(wrapperFn)
+}
+
+func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+		if s.debug {
+			// reload templates on each request
+			// to reflect changes during development
+			s.templates = parseTemplates(s.templatesFuncMap)
+		}
+		t, data, err := handler(w, r)
+		if t == noTpl {
+			return nil, nil, nil
+		}
+		return s.templates[t], data, err
+	}
+
+	return s.htmlTemplateHandler(wrapperFn)
 }
 
 type tpl int
@@ -333,6 +381,7 @@ type TemplateData struct {
 	CoinShortcut     string
 	CoinLabel        string
 	InternalExplorer bool
+	ExtraNavItems    map[string]string
 	Address          *api.Address
 	AddrStr          string
 	Tx               *api.Tx
@@ -348,16 +397,28 @@ type TemplateData struct {
 	TOSLink          string
 	SendTxHex        string
 	Status           string
+	ExtraData        interface{}
 }
 
-func parseTemplates() []*template.Template {
+func getTemplateFuncMap(extraFuncs template.FuncMap) template.FuncMap {
 	templateFuncMap := template.FuncMap{
 		"formatTime":          formatTime,
 		"formatUnixTime":      formatUnixTime,
 		"formatAmount":        formatAmount,
 		"setTxToTemplateData": setTxToTemplateData,
 		"stringInSlice":       stringInSlice,
+		"formatTxType":        func(t uint32) string { return string(t) },
 	}
+
+	// Also allow for overwriting
+	for k, v := range extraFuncs {
+		templateFuncMap[k] = v
+	}
+
+	return templateFuncMap
+}
+
+func parseTemplates(templateFuncMap template.FuncMap) []*template.Template {
 	t := make([]*template.Template, tplCount)
 	t[errorTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))
 	t[errorInternalTpl] = template.Must(template.New("error").Funcs(templateFuncMap).ParseFiles("./static/templates/error.html", "./static/templates/base.html"))

@@ -595,3 +595,7 @@ func (b *EthereumRPC) GetMempoolEntry(txid string) (*bchain.MempoolEntry, error)
 func (b *EthereumRPC) GetChainParser() bchain.BlockChainParser {
 	return b.Parser
 }
+
+func (b *EthereumRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}
