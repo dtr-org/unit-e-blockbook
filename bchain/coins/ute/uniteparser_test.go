@@ -419,35 +419,35 @@ func TestGetOp1(t *testing.T) {
 	for i, test := range tests {
 		script, err := hex.DecodeString(test.hex)
 		if err != nil {
-			t.Errorf("test case %v: unexpected parsing error %v", i, err)
+			t.Errorf("test case %d: unexpected parsing error %v", i, err)
 			return
 		}
 
 		noff, op, err := GetOp(script, test.off)
 		if test.expectedErr != nil {
 			if err == nil {
-				t.Errorf("test case %v: did not get error, want %v", i, test.expectedErr)
+				t.Errorf("test case %d: did not get error, want %v", i, test.expectedErr)
 			}
 			if err.Error() != test.expectedErr.Error() {
-				t.Errorf("test case %v: unexpected error %v, want %v", i, err, test.expectedErr)
+				t.Errorf("test case %d: unexpected error %v, want %v", i, err, test.expectedErr)
 				return
 			}
 			continue
 		}
 
 		if err != nil {
-			t.Errorf("test case %v: unexpected error %v", i, err)
+			t.Errorf("test case %d: unexpected error %v", i, err)
 			return
 		}
 
 		if noff != test.noff {
-			t.Errorf("test case %v: unexpected new offset %v, want %v", i, noff, test.noff)
+			t.Errorf("test case %d: unexpected new offset %d, want %d", i, noff, test.noff)
 			return
 		}
 
 		got := hex.EncodeToString(op)
 		if got != test.expected {
-			t.Errorf("test case %v: unexpected value %v, want %v", i, got, test.expected)
+			t.Errorf("test case %d: unexpected value %s, want %s", i, got, test.expected)
 			return
 		}
 	}
@@ -513,12 +513,20 @@ func TestGetVaruint(t *testing.T) {
 			arr:      []byte{0x01, 0x0e},
 			expected: 270,
 		},
+		{
+			arr:      []byte{0x07, 0x21, 0xda, 0x0e},
+			expected: 0x0721da0e,
+		},
+		{
+			arr:      []byte{0xdf, 0x33, 0xda, 0x0e, 0x51, 0xca, 0xcd, 0x05},
+			expected: 0xdf33da0e51cacd05,
+		},
 	}
 
 	for _, test := range tests {
 		got := GetVaruint(test.arr)
 		if got != test.expected {
-			t.Errorf("incorrect value %v, expected %v", got, test.expected)
+			t.Errorf("incorrect value %d, expected %d", got, test.expected)
 			return
 		}
 	}
@@ -528,22 +536,22 @@ func TestExtractVote(t *testing.T) {
 	hexString := "473044022041007ad95eaf56b4d5d2629cf96d2f968ad4488102c93ee7418bfa4c3c7a3c3d02207f0c36db3a9bb30995e88ed321cd144f612bba9ab84d0fdd28f0eb7a17055ffb014c82473045022100e77bd5fe006cd973f8d231ffeb26b80eddbeab93ed9f382f55276ddf98c882840220027a8ad1efcc41606dd77b48f5658bf8270fb51ada97b2b36d6a60649280c6c114a57e1e892f3031232356ecfddb0102557999357120c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556010e010f"
 	vote := ExtractVoteFromSignature(hexString)
 	if vote.ValidatorAddress != "a57e1e892f3031232356ecfddb01025579993571" {
-		t.Errorf("unexpected ValidatorAddress = %v", vote.ValidatorAddress)
+		t.Errorf("unexpected ValidatorAddress = %s", vote.ValidatorAddress)
 		return
 	}
 
 	if vote.TargetHash != "c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556" {
-		t.Errorf("unexpected targetHash = %v", vote.TargetHash)
+		t.Errorf("unexpected targetHash = %s", vote.TargetHash)
 		return
 	}
 
 	if vote.SourceEpoch != 0x0e {
-		t.Errorf("unexpected SourceEpoch = %v", vote.SourceEpoch)
+		t.Errorf("unexpected SourceEpoch = %d", vote.SourceEpoch)
 		return
 	}
 
 	if vote.TargetEpoch != 0x0f {
-		t.Errorf("unexpected TargetEpoch = %v", vote.TargetEpoch)
+		t.Errorf("unexpected TargetEpoch = %d", vote.TargetEpoch)
 		return
 	}
 }
