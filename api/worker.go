@@ -316,6 +316,7 @@ func (w *Worker) txFromTxAddress(txid string, ta *db.TxAddresses, bi *db.BlockIn
 	r := &Tx{
 		Blockhash:     bi.Hash,
 		Blockheight:   int(ta.Height),
+		TxType:        uint32(ta.TxType),
 		Blocktime:     bi.Time,
 		Confirmations: bestheight - ta.Height + 1,
 		Fees:          w.chainParser.AmountToDecimalString(&feesSat),
