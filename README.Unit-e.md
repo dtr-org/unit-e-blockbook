@@ -58,3 +58,26 @@ To achieve this:
 
    This uses the test certificate from the blockbook repo. If you want to use
    your own certificate adjust the `-certfile` option accordingly.
+
+
+## Creating test data
+
+In order to see data in the Blockbook block explorer you need to connect it to
+a united daemon which has data. For testing there are two ways to generate test
+data:
+
+1. Run `united` in `-regtest` mode and use the CLI to generate blocks with
+   `unite-cli --rpcuser=rpc --rpcpassword=rpc generate`
+2. Reuse the data created by the functional tests. For this you have to run a
+   functional test with the `--nocleanup` option. This will keep the directory
+   with the test data. The test output will tell you where this directory is.
+   You can then run `united` with the `-datadir` option pointing to this
+   directory.
+
+   You will also need to add the esperanza options with the
+   `-esperanzaconfig` option. Don't forget to quote the JSON such as
+   `-esperanzaconfig='{"epochLength": 10, "minDepositSize": 1500}'`. The test
+   output will tell you which exact options you need to set.
+
+   You also will need to add the `-reindex` option so that the index required by
+   the block explorer is built.
