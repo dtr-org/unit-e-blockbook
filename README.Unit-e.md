@@ -26,7 +26,7 @@ To achieve this:
 1. Create the network `docker network create blockbook-net`,
 2. Get network's subnet `docker network inspect blockbook-net`
 3. Configure both united and blockbook to use this subnet (make sure to provide correct rpc address in Blockbook and `rpc_bind` in Unit-e)
-4. If cointainers are annonymous, get their ID's with `docker ps`
+4. If containers are anonymous, get their ID's with `docker ps`
 5. Connect both containers by calling `docker network connect blockbook-net container-id-or-name`
 
 
