@@ -15,10 +15,10 @@ united -txindex -server=1 -rpcbind=127.0.0.1  -rpcallowip=127.0.0.1/32 \
 ## Running standalone Blockbook from Docker
 
 1. Run `make deb-blockbook-unit-e`, this will produce blockbook package in build directory
-2. Run `docker build --build-arg COIN=unite --build-arg RPC_ADDRESS=127.0.0.1:8172 -t blockbook-runtime .`
-3. Run `docker run -it --rm --name blockbook -p 9172:9172 -p 9272:9272 blockbook-runtime`
+2. Run `docker build --build-arg COIN=unite -t blockbook-runtime .`
+3. Run `docker run -it --rm --name blockbook -p 9172:9172 -p 9272:9272 blockbook-runtime --address 127.0.0.1:8172`
 
-Make sure `RPC_ADDRESS` points to your Unit-e node's RPC port.
+Make sure --address points to your Unit-e node's RPC port.
 
 ## Running both Blockbook and Unit-e's node in Dockers
 
@@ -26,7 +26,7 @@ If you want to run both Blockbook and Unit-e in separate containers, make sure b
 To achieve this:
 1. Create the network `docker network create blockbook-net`,
 2. Get network's subnet `docker network inspect blockbook-net`
-3. Configure both united and blockbook to use this subnet (replace `RPC_ADDRESS` or `rpc_url` in Blockbook and `rpc_bind` in Unit-e)
+3. Configure both united and blockbook to use this subnet (make sure to provide correct rpc address in Blockbook and `rpc_bind` in Unit-e)
 4. If cointainers are annonymous, get their ID's with `docker ps`
 5. Connect both containers by calling `docker network connect blockbook-net container-id-or-name`
 
