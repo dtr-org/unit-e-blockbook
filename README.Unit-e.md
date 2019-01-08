@@ -8,8 +8,17 @@ Make sure the node is indexing transactions, has RPC server enabled, the RPC cre
 
 Example flags:
 ```
-united -txindex -server=1 -rpcbind=127.0.0.1:8172 -rpcallowip=127.0.0.1/32 -rpcuser=rpc -rpcpassword=rpc
+united -txindex -server=1 -rpcport=8172 -rpcallowip=127.0.0.1/32 -rpcuser=rpc -rpcpassword=rpc
 ```
+
+This uses a custom port `8172` to run the daemon which makes it easier when, for
+example switching between different networks so you don't have to adapt the port
+on the blockbook side.
+
+The `-rpcallowip` option has to allow the IP address from the blockbook server.
+You can use `-rpcallowip=0.0.0.0/0` to allow connections from all IP addresses
+or use the specific address of the server, which you will need when it's not
+running on the same host or in a container.
 
 ## Running standalone Blockbook from Docker
 
@@ -17,7 +26,11 @@ united -txindex -server=1 -rpcbind=127.0.0.1:8172 -rpcallowip=127.0.0.1/32 -rpcu
 2. Run `docker build --build-arg COIN=unite -t blockbook-runtime .`
 3. Run `docker run -it --rm --name blockbook -p 9172:9172 -p 9272:9272 blockbook-runtime --address 127.0.0.1:8172`
 
-Make sure --address points to your Unit-e node's RPC port.
+Make sure --address points to your Unit-e node's RPC port. If you run `united`
+on the host you can find its IP address by running `ip a` to get the docker
+network interface of the host. Or you run `docker run --entrypoint="" -it
+blockbook-runtime ip route` to get the IP of the default route of the container
+which is the host IP.
 
 ## Running both Blockbook and Unit-e's node in Dockers
 
@@ -25,9 +38,18 @@ If you want to run both Blockbook and Unit-e in separate containers, make sure b
 To achieve this:
 1. Create the network `docker network create blockbook-net`,
 2. Get network's subnet `docker network inspect blockbook-net`
-3. Configure both united and blockbook to use this subnet (make sure to provide correct rpc address in Blockbook and `rpc_bind` in Unit-e)
+3. Configure both united and blockbook to use this subnet (you can get the IP
+   addresses of the containers from `docker network inspect` when the containers
+   are running):
+    * Set the `united` RPC address in blockbook with the `--address` option when
+      starting the container
+    * Make sure the `-rpcallowip` option allows the address of the blockbook
+      container to connect to `united`.
 4. If containers are anonymous, get their ID's with `docker ps`
-5. Connect both containers by calling `docker network connect blockbook-net container-id-or-name`
+5. Connect both containers by calling `docker network connect blockbook-net
+   container-id-or-name`. You can also provide the network name with the
+   `--network=blockbook-net` option to the `run` command when starting the
+   container.
 
 
 ## Running Blockbook from repo
