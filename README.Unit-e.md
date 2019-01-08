@@ -20,17 +20,21 @@ You can use `-rpcallowip=0.0.0.0/0` to allow connections from all IP addresses
 or use the specific address of the server, which you will need when it's not
 running on the same host or in a container.
 
-## Running standalone Blockbook from Docker
+## Running standalone Blockbook from Docker and Unit-e's node on the host
 
 1. Run `make deb-blockbook-unit-e`, this will produce blockbook package in build directory
 2. Run `docker build --build-arg COIN=unite -t blockbook-runtime .`
 3. Run `docker run -it --rm --name blockbook -p 9172:9172 -p 9272:9272 blockbook-runtime --address 127.0.0.1:8172`
 
 Make sure --address points to your Unit-e node's RPC port. If you run `united`
-on the host you can find its IP address by running `ip a` to get the docker
-network interface of the host. Or you run `docker run --entrypoint="" -it
-blockbook-runtime ip route` to get the IP of the default route of the container
-which is the host IP.
+on a Linux host you can find its IP address by running `ip a` to get the docker
+network interface of the host.
+
+On macOS you can use `--address docker.for.mac.localhost:8172` to point to the
+address of the host.
+
+Or you run `docker run --entrypoint="" -it blockbook-runtime ip route` to get
+the IP of the default route of the container which is the host IP.
 
 ## Running both Blockbook and Unit-e's node in Dockers
 
