@@ -8,8 +8,7 @@ Make sure the node is indexing transactions, has RPC server enabled, the RPC cre
 
 Example flags:
 ```
-united -txindex -server=1 -rpcbind=127.0.0.1  -rpcallowip=127.0.0.1/32 \
-       -rpcauth=rpc:68c9195bf83979cc3bc3717cf17e61ce$de438b1ec0f1d4046ceb02f7603529610115e24c545fbead89f82396931cb04d
+united -txindex -server=1 -rpcbind=127.0.0.1:8172 -rpcallowip=127.0.0.1/32 -rpcuser=rpc -rpcpassword=rpc
 ```
 
 ## Running standalone Blockbook from Docker
