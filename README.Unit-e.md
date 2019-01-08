@@ -78,9 +78,7 @@ To achieve this:
     "block_addresses_to_keep": 300
 }
 ```
-3. Run `./blockbook -blockchaincfg=path_to_config.json \
-   -datadir=path-to-blockbook-db -sync -internal=:9172 -public=:9272 \
-   -certfile=server/testcert -explorer= -log_dir=log-dir -dbcache=1073741824`
+3. Run `./blockbook -blockchaincfg=path_to_config.json -datadir=path-to-blockbook-db -sync -internal=:9172 -public=:9272 -certfile=server/testcert -explorer= -log_dir=log-dir -dbcache=1073741824`
 
    This uses the test certificate from the blockbook repo. If you want to use
    your own certificate adjust the `-certfile` option accordingly.
