@@ -7,6 +7,7 @@ import (
 	"blockbook/bchain/coins/btc"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"os"
 	"reflect"
@@ -353,5 +354,204 @@ func TestUnpackTx(t *testing.T) {
 				t.Errorf("unpackTx() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
+	}
+}
+
+func TestGetOp1(t *testing.T) {
+	tests := []struct {
+		hex         string
+		off         uint64
+		noff        uint64
+		expected    string
+		expectedErr error
+	}{
+		{
+			hex:         "01",
+			noff:        0,
+			off:         2,
+			expected:    "00",
+			expectedErr: errors.New("invalid script, offset outside bounds"),
+		},
+		{
+			hex:         "01",
+			noff:        0,
+			expected:    "00",
+			expectedErr: errors.New("invalid script, not enough elements"),
+		},
+		{
+			hex:         "ff",
+			noff:        1,
+			expected:    "ff",
+			expectedErr: nil,
+		},
+		{
+			hex:         "4dff",
+			noff:        0,
+			expected:    "00",
+			expectedErr: errors.New("invalid script, not enough elements after OP_PUSHDATA"),
+		},
+		{
+			hex:         "4dffff",
+			noff:        0,
+			expected:    "00",
+			expectedErr: errors.New("invalid script, not enough elements"),
+		},
+		{
+			hex:         "4effffffff00",
+			noff:        0,
+			expected:    "00",
+			expectedErr: errors.New("invalid script, not enough elements"),
+		},
+		{
+			hex:         "01ff",
+			noff:        2,
+			expected:    "ff",
+			expectedErr: nil,
+		},
+		{
+			hex:         "4e0000000105",
+			noff:        6,
+			expected:    "05",
+			expectedErr: nil,
+		},
+	}
+
+	for i, test := range tests {
+		script, err := hex.DecodeString(test.hex)
+		if err != nil {
+			t.Errorf("test case %d: unexpected parsing error %v", i, err)
+			return
+		}
+
+		noff, op, err := GetOp(script, test.off)
+		if test.expectedErr != nil {
+			if err == nil {
+				t.Errorf("test case %d: did not get error, want %v", i, test.expectedErr)
+			}
+			if err.Error() != test.expectedErr.Error() {
+				t.Errorf("test case %d: unexpected error %v, want %v", i, err, test.expectedErr)
+				return
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Errorf("test case %d: unexpected error %v", i, err)
+			return
+		}
+
+		if noff != test.noff {
+			t.Errorf("test case %d: unexpected new offset %d, want %d", i, noff, test.noff)
+			return
+		}
+
+		got := hex.EncodeToString(op)
+		if got != test.expected {
+			t.Errorf("test case %d: unexpected value %s, want %s", i, got, test.expected)
+			return
+		}
+	}
+}
+
+func TestGetOp2(t *testing.T) {
+	hexString := "473044022041007ad95eaf56b4d5d2629cf96d2f968ad4488102c93ee7418bfa4c3c7a3c3d02207f0c36db3a9bb30995e88ed321cd144f612bba9ab84d0fdd28f0eb7a17055ffb014c82473045022100e77bd5fe006cd973f8d231ffeb26b80eddbeab93ed9f382f55276ddf98c882840220027a8ad1efcc41606dd77b48f5658bf8270fb51ada97b2b36d6a60649280c6c114a57e1e892f3031232356ecfddb0102557999357120c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556010e010f"
+	script, err := hex.DecodeString(hexString)
+	if err != nil {
+		t.Errorf("unexpected error = %v", err)
+		return
+	}
+
+	noff, op, err := GetOp(script, 0)
+	if err != nil {
+		t.Errorf("unexpected error = %v", err)
+		return
+	}
+
+	if noff != 72 {
+		t.Errorf("unexpected new offset = %v", noff)
+		return
+	}
+
+	got := hex.EncodeToString(op)
+	if got != "3044022041007ad95eaf56b4d5d2629cf96d2f968ad4488102c93ee7418bfa4c3c7a3c3d02207f0c36db3a9bb30995e88ed321cd144f612bba9ab84d0fdd28f0eb7a17055ffb01" {
+		t.Errorf("unexpected value = %v", got)
+		return
+	}
+
+	noff, op, err = GetOp(script, noff)
+	if err != nil {
+		t.Errorf("unexpected error = %v", err)
+		return
+	}
+
+	if noff != 204 {
+		t.Errorf("unexpected new offset = %v", noff)
+		return
+	}
+
+	got = hex.EncodeToString(op)
+	if got != "473045022100e77bd5fe006cd973f8d231ffeb26b80eddbeab93ed9f382f55276ddf98c882840220027a8ad1efcc41606dd77b48f5658bf8270fb51ada97b2b36d6a60649280c6c114a57e1e892f3031232356ecfddb0102557999357120c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556010e010f" {
+		t.Errorf("unexpected value = %v", got)
+		return
+	}
+}
+
+func TestGetVaruint(t *testing.T) {
+	tests := []struct {
+		arr      []byte
+		expected uint64
+	}{
+		{
+			arr:      []byte{0x0e},
+			expected: 14,
+		},
+		{
+			arr:      []byte{0x00, 0x0e},
+			expected: 14,
+		},
+		{
+			arr:      []byte{0x01, 0x0e},
+			expected: 270,
+		},
+		{
+			arr:      []byte{0x07, 0x21, 0xda, 0x0e},
+			expected: 0x0721da0e,
+		},
+		{
+			arr:      []byte{0xdf, 0x33, 0xda, 0x0e, 0x51, 0xca, 0xcd, 0x05},
+			expected: 0xdf33da0e51cacd05,
+		},
+	}
+
+	for _, test := range tests {
+		got := GetVaruint(test.arr)
+		if got != test.expected {
+			t.Errorf("incorrect value %d, expected %d", got, test.expected)
+			return
+		}
+	}
+}
+
+func TestExtractVote(t *testing.T) {
+	hexString := "473044022041007ad95eaf56b4d5d2629cf96d2f968ad4488102c93ee7418bfa4c3c7a3c3d02207f0c36db3a9bb30995e88ed321cd144f612bba9ab84d0fdd28f0eb7a17055ffb014c82473045022100e77bd5fe006cd973f8d231ffeb26b80eddbeab93ed9f382f55276ddf98c882840220027a8ad1efcc41606dd77b48f5658bf8270fb51ada97b2b36d6a60649280c6c114a57e1e892f3031232356ecfddb0102557999357120c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556010e010f"
+	vote := ExtractVoteFromSignature(hexString)
+	if vote.ValidatorAddress != "a57e1e892f3031232356ecfddb01025579993571" {
+		t.Errorf("unexpected ValidatorAddress = %s", vote.ValidatorAddress)
+		return
+	}
+
+	if vote.TargetHash != "c057ed3a9a722f0ebab32aa4231df45deeec409f45206f0942d9103d9504d556" {
+		t.Errorf("unexpected targetHash = %s", vote.TargetHash)
+		return
+	}
+
+	if vote.SourceEpoch != 0x0e {
+		t.Errorf("unexpected SourceEpoch = %d", vote.SourceEpoch)
+		return
+	}
+
+	if vote.TargetEpoch != 0x0f {
+		t.Errorf("unexpected TargetEpoch = %d", vote.TargetEpoch)
+		return
 	}
 }

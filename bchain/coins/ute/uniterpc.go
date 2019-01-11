@@ -1,6 +1,7 @@
 package ute
 
 import (
+	"blockbook/api"
 	"blockbook/bchain"
 	"blockbook/bchain/coins/btc"
 	"encoding/json"
@@ -55,6 +56,10 @@ type FinalizationState struct {
 func (u *UniteRPC) txTypeToString(t uint32) string {
 	v, _ := u.txTypesMap[t]
 	return v
+}
+
+func (u *UniteRPC) extractVoteFromTx(tx *api.Tx) *Vote {
+	return ExtractVoteFromSignature(tx.Vin[0].ScriptSig.Hex)
 }
 
 // NewUniteHTMLHandler creates the Unit-e's HTML handler and populates it's templates
@@ -249,7 +254,8 @@ func (h *UniteHTMLHandler) GetExtraNavItems() map[string]string {
 // GetExtraFuncMap returns the extra functions to be registered in templates
 func (h *UniteHTMLHandler) GetExtraFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"formatTxType": h.unite.txTypeToString,
+		"formatTxType":      h.unite.txTypeToString,
+		"extractVoteFromTx": h.unite.extractVoteFromTx,
 	}
 }
 

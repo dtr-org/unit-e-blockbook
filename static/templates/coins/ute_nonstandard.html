@@ -1,0 +1,152 @@
+{{define "vote"}}{{$tx := .Tx}}
+    {{$decodedVote := extractVoteFromTx $tx}}
+    {{$vout0 := index $tx.Vout 0}}{{$addr := index $vout0.ScriptPubKey.Addresses 0}}
+<div class="data-div">
+    <table class="table data-table">
+        <tbody>
+            </tr>
+                <td style="width: 25%;">Wallet Address</td>
+                <td class="data">
+                    <a href="/address/{{$addr}}">{{$addr}}</a>
+                </td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Validator address</td>
+                <td class="data">
+                    {{$decodedVote.ValidatorAddress}}
+                </td>
+            <tr>
+            <tr>
+                <td style="width: 25%;">Target hash</td>
+                <td class="ellipsis data">{{$decodedVote.TargetHash}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Source epoch</td>
+                <td class="ellipsis data">{{$decodedVote.SourceEpoch}}</td>
+            </tr>
+            <tr>
+                <td style="width: 25%;">Target epoch</td>
+                <td class="ellipsis data">{{$decodedVote.TargetEpoch}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{{end}}
+
+{{define "nonstandard_partial"}}{{$cs := .CoinShortcut}}{{$tx := .Tx}}{{$addr := .AddrStr}}
+<div class="alert alert-data" style="background-color:lightgoldenrodyellow;">
+    <div class="row line-bot">
+        <div class="col-xs-7 col-md-8 ellipsis">
+            <a href="/tx/{{$tx.Txid}}">{{$tx.Txid}}</a>
+        </div>
+        {{- if $tx.Confirmations -}}
+        <div class="col-xs-5 col-md-4 text-muted text-right">mined {{formatUnixTime $tx.Blocktime}}</div>
+        {{- end -}}
+    </div>
+    <table class="data-table line-bot" style="background-color:lightgoldenrodyellow;width:100%;">
+        <tbody>
+            <tr>
+                <td style="width: 20%;">Transaction Type</td>
+                <td>{{formatTxType $tx.TxType}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="row line-mid">
+        <div class="col-md-5">
+            <div class="row">
+                <table class="table data-table">
+                    <tbody>
+                        {{- range $vin := $tx.Vin -}}
+                        <tr>
+                            <td>
+                                {{- if $vin.Txid -}}
+                                <a class="float-left text-muted" href="/tx/{{$vin.Txid}}" title="Outpoint {{$vin.Txid}},{{$vin.Vout}}">➡&nbsp;</a>
+                                {{- end -}}
+                                {{- range $a := $vin.Addresses -}}
+                                <span class="ellipsis float-left">
+                                    {{if and (ne $a $addr) $vin.Searchable}}<a href="/address/{{$a}}">{{$a}}</a>{{else}}{{$a}}{{end}}
+                                </span>
+                                {{- else -}}
+                                <span class="float-left">{{- if $vin.ScriptSig.Hex -}}Unparsed address{{- else -}}No Inputs (Newly Generated Coins){{- end -}}</span>
+                                {{- end -}}{{- if $vin.Addresses -}}
+                                <span class="float-right{{if stringInSlice $addr $vin.Addresses}} text-danger{{end}}">{{formatAmount $vin.Value}} {{$cs}}</span>
+                                {{- end -}}
+                            </td>
+                        </tr>
+                        {{- else -}}
+                        <tr>
+                            <td>No Inputs</td>
+                        </tr>
+                        {{- end -}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-1 col-xs-12 text-center">
+            <svg class="octicon" viewBox="0 0 8 16">
+                <path fill-rule="evenodd" d="M7.5 8l-5 5L1 11.5 4.75 8 1 4.5 2.5 3l5 5z"></path>
+            </svg>
+        </div>
+        <div class="col-md-6">
+            <div class="row">
+                <table class="table data-table">
+                    <tbody>
+                        {{- range $vout := $tx.Vout -}}
+                        <tr>
+                            <td>
+                                {{- range $a := $vout.ScriptPubKey.Addresses -}}
+                                <span class="ellipsis float-left">
+                                    {{- if and (ne $a $addr) $vout.ScriptPubKey.Searchable}}<a href="/address/{{$a}}">{{$a}}</a>{{else}}{{$a}}{{- end -}}
+                                </span>
+                                {{- else -}}
+                                <span class="float-left">Unparsed address</span>
+                                {{- end -}}
+                                <span class="float-right{{if stringInSlice $addr $vout.ScriptPubKey.Addresses}} text-success{{end}}">
+                                    {{formatAmount $vout.Value}} {{$cs}} {{if $vout.Spent}}<a class="text-danger" href="{{if $vout.SpentTxID}}/tx/{{$vout.SpentTxID}}{{else}}/spending/{{$tx.Txid}}/{{$vout.N}}{{end}}" title="Spent">➡</a>{{else -}}
+                                    <span class="text-success" title="Unspent"> <b>×</b></span>
+                                    {{- end -}}
+                                </span>
+                            </td>
+                        </tr>
+                        {{- else -}}
+                        <tr>
+                            <td>No Outputs</td>
+                        </tr>
+                        {{- end -}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row line-top">
+        <div class="col-xs-6 col-sm-4 col-md-4">
+            {{- if $tx.Fees -}}
+            <span class="txvalues txvalues-default">Fee: {{formatAmount $tx.Fees}} {{$cs}}</span>
+            {{- end -}}
+        </div>
+        <div class="col-xs-6 col-sm-8 col-md-8 text-right">
+            {{- if $tx.Confirmations -}}
+            <span class="txvalues txvalues-success">{{$tx.Confirmations}} Confirmations</span>
+            {{- else -}}
+            <span class="txvalues txvalues-danger ng-hide">Unconfirmed Transaction!</span>
+            {{- end -}}
+            <span class="txvalues txvalues-primary">{{formatAmount $tx.ValueOut}} {{$cs}}</span>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "ute_nonstandard"}}{{$cs := .CoinShortcut}}{{$addr := .AddrStr}}{{$tx := .Tx}}
+    {{/* {{ workaround untill ADR-21 is implemented }} */}}
+    {{ $vin0 := index $tx.Vin 0 }}
+    {{- if $vin0.ScriptSig.Hex -}}
+        {{- if eq $tx.TxType 3}}{{template "vote" .}}{{else}}{{template "nonstandard_partial" .}}{{end -}}
+        {{/* {{- if eq $tx.TxType 2}}{{template "deposit" .}}{{end -}}
+           * {{- if eq $tx.TxType 4}}{{template "logout" .}}{{end -}}
+           * {{- if eq $tx.TxType 5}}{{template "slash" .}}{{end -}}
+           * {{- if eq $tx.TxType 6}}{{template "withdraw" .}}{{end -}}
+           * {{- if eq $tx.TxType 7}}{{template "admin" .}}{{end -}} */}}
+    {{- else -}}
+        {{template "nonstandard_partial" .}}
+    {{- end -}}
+{{end}}

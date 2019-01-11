@@ -68,12 +68,13 @@
     </div>
 </div>
 {{- if $b.Transactions -}}
+<!-- Unit-e: Add Commits after ADR-21 is implemented -->
 <div class="h-container">
     <h3 class="h-container-6">Transactions</h3>
     <nav class="h-container-6">{{template "paging" $data}}</nav>
 </div>
 <div class="data-div">
-    {{- range $tx := $b.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{template "txdetail" $data}}{{end -}}
+    {{- range $tx := $b.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{ if eq $tx.TxType 0 }}{{template "txdetail" $data}}{{else}}{{template "ute_nonstandard" $data}}{{end}}{{end -}}
 </div>
 <nav>{{template "paging" $data }}</nav>
 {{end}}{{end}}
