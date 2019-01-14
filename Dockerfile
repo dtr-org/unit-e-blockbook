@@ -17,5 +17,6 @@ EXPOSE 9172 9272
 WORKDIR /opt/coins/blockbook/${COIN}
 
 ADD docker_entrypoint.sh /.
+RUN chmod 777 /docker_entrypoint.sh
 
-ENTRYPOINT ["/bin/bash", "/docker_entrypoint.sh"]
+ENTRYPOINT ["/docker_entrypoint.sh"]
