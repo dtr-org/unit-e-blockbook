@@ -53,15 +53,18 @@ func init() {
 
 	// Address encoding magics
 	MainNetParams.AddressMagicLen = 1
+	MainNetParams.Bech32HRPSegwit = "ue"
 
 	TestNetParams = chaincfg.TestNet3Params
 	TestNetParams.Net = TestnetMagic
+	TestNetParams.Bech32HRPSegwit = "tue"
 
 	// Address encoding magics
 	TestNetParams.AddressMagicLen = 1
 
 	RegtestParams = chaincfg.RegressionNetParams
 	RegtestParams.Net = RegtestMagic
+	RegtestParams.Bech32HRPSegwit = "uert"
 }
 
 // UniteParser handle
@@ -339,6 +342,8 @@ func (p *UniteParser) outputScriptToAddresses(script []byte) ([]string, bool, er
 			return nil, false, err
 		}
 		return []string{addr.EncodeAddress()}, true, nil
+	} else if strings.HasPrefix(string(script), p.Params.Bech32HRPSegwit) {
+		return []string{string(script)}, true, nil
 	} else if len(script) != 0 {
 		return []string{string(script)}, false, nil
 	}
