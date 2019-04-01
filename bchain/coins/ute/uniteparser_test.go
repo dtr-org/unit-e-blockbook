@@ -555,3 +555,22 @@ func TestExtractVote(t *testing.T) {
 		return
 	}
 }
+
+func TestExtractSlash(t *testing.T) {
+	hexString := "473044022051a23d4aef6086a272a8a81931d624d079d315babb626c52e3da0eee438c04ca02205420e72ab7a758abb36a963fc0edba88e285b77d80f4c1e205c0b19356727b6a014c81463044022023696de39b4aedb9e8fff73300d0378e707520084d276fa81cfa962f9bc986b1022007c3c196dab315517842adea0646018d2004909ee59a04e93c5b1cdffd9cb22a14f53ab1d04f4f13126fc30b46e2b0cdb7266dda20207414ff6c2cd52e9cca363cf2455e5a51d694ad2e165a6671caad40b900f68201010e01184c82473045022100bf2d6061ee1c279dc6f18c344484b1d07d297b8b53b60eefe7259935154bfa8202205455061688af7f05b602150e66ad45e7e9e16b75e24ba0bbde4df6635fcbbacb14f53ab1d04f4f13126fc30b46e2b0cdb7266dda20204b1708ad7c03cd582d1aadf92be80338365b2822be481bf3bd3a07abd47035e1010e0118"
+	slash := ExtractSlashFromSignature(hexString)
+
+	expected_vote1 := Vote{ValidatorAddress: "f53ab1d04f4f13126fc30b46e2b0cdb7266dda20", TargetHash: "7414ff6c2cd52e9cca363cf2455e5a51d694ad2e165a6671caad40b900f68201", SourceEpoch: 14, TargetEpoch: 24}
+
+	expected_vote2 := Vote{ValidatorAddress: "f53ab1d04f4f13126fc30b46e2b0cdb7266dda20", TargetHash: "4b1708ad7c03cd582d1aadf92be80338365b2822be481bf3bd3a07abd47035e1", SourceEpoch: 14, TargetEpoch: 24}
+
+	if *slash.Vote1 != expected_vote1 {
+		t.Errorf("first vote %v is not as expected %v", slash.Vote1, expected_vote1)
+		return
+	}
+
+	if *slash.Vote2 != expected_vote2 {
+		t.Errorf("second vote %v is not as expected %v", slash.Vote2, expected_vote2)
+		return
+	}
+}
