@@ -328,6 +328,15 @@ func isPayVoteSlashScript(script []byte) bool {
 	return len(script) == 103 && matchPayVoteSlashScript(script, 0)
 }
 
+func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
+	addr, err := btcutil.NewAddressPubKeyHash(script[2:22], params)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return []string{addr.EncodeAddress()}, true, nil
+}
+
 // IsOpReturnScript returns whether script is OP_RETURN-type script
 func IsOpReturnScript(script []byte) bool {
 	matchesOpReturnScript := len(script) > 0 && script[0] == OpReturn
@@ -366,7 +375,13 @@ func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDe
 		return nil, errors.New("unit-e parser: could not decode script hex")
 	}
 
-	if isPayVoteSlashScript(script) {
+	if output.ScriptPubKey.Type == "witness_v1_remotestake_keyhash" {
+		addresses, _, err := extractRemoteStakingScriptAddrs(script, p.Params)
+		if err != nil {
+			return nil, errors.New("unit-e parser: could not extract address from remote staking (keyhash) transaction")
+		}
+		return p.GetAddrDescFromAddress(addresses[0])
+	} else if isPayVoteSlashScript(script) {
 		addresses, _, err := extractPayVoteSlashScriptAddrs(script, p.Params)
 		if err != nil {
 			return nil, errors.New("unit-e parser: could not extract address from payvoteslash")

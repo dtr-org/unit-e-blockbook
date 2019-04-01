@@ -199,7 +199,7 @@ func TestParseOpReturn(t *testing.T) {
 
 func TestGetAddrDesc(t *testing.T) {
 	type args struct {
-		tx           bchain.Tx
+		vout         []bchain.Vout
 		parser       *UniteParser
 		wantsReverse bool
 	}
@@ -210,7 +210,7 @@ func TestGetAddrDesc(t *testing.T) {
 		{
 			name: "ute-1",
 			args: args{
-				tx:           testTx1,
+				vout:         testTx1.Vout,
 				parser:       NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{}),
 				wantsReverse: true,
 			},
@@ -218,7 +218,24 @@ func TestGetAddrDesc(t *testing.T) {
 		{
 			name: "ute-2",
 			args: args{
-				tx:           testTx2,
+				vout:         testTx2.Vout,
+				parser:       NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
+				wantsReverse: false,
+			},
+		},
+		{
+			name: "ute-rs-keyhash",
+			args: args{
+				vout: []bchain.Vout{
+					bchain.Vout{
+						ValueSat: *big.NewInt(977517107),
+						N:        1,
+						ScriptPubKey: bchain.ScriptPubKey{
+							Hex:  "5114d792bcaaa3467041be0ab346023e762318c5d249203d3226d6497d727a39c72ba1a0087dc8b7a382da06f9da6e063404987a103949",
+							Type: "witness_v1_remotestake_keyhash",
+						},
+					},
+				},
 				parser:       NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
 				wantsReverse: false,
 			},
@@ -226,7 +243,7 @@ func TestGetAddrDesc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for n, vout := range tt.args.tx.Vout {
+			for n, vout := range tt.args.vout {
 				if len(vout.ScriptPubKey.Addresses) == 1 {
 					got1, err := tt.args.parser.GetAddrDescFromVout(&vout)
 					if err != nil {
