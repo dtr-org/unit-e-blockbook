@@ -5,6 +5,7 @@ import (
 	"blockbook/bchain/coins/btc"
 	"encoding/hex"
 	"errors"
+	"strings"
 
 	"github.com/jakm/btcutil"
 
@@ -76,6 +77,12 @@ type Vote struct {
 	TargetHash       string
 	SourceEpoch      uint32
 	TargetEpoch      uint32
+}
+
+// Slash data
+type Slash struct {
+	Vote1 *Vote
+	Vote2 *Vote
 }
 
 // NewUniteParser returns new UniteParser instance
@@ -227,6 +234,34 @@ func ExtractVoteFromSignature(sigHex string) *Vote {
 	}
 
 	return DecodeVote(vote)
+}
+
+// ExtractSlashFromSignature reads and decodes votes from signature of a slash
+func ExtractSlashFromSignature(sigHex string) *Slash {
+	script, err := hex.DecodeString(sigHex)
+	if err != nil {
+		return nil
+	}
+
+	// read txSig (ignored)
+	ofs, _, err := GetOp(script, 0)
+	if err != nil {
+		return nil
+	}
+
+	// read first vote
+	ofs, vote1, err := GetOp(script, ofs)
+	if err != nil {
+		return nil
+	}
+
+	// read second vote
+	ofs, vote2, err := GetOp(script, ofs)
+	if err != nil {
+		return nil
+	}
+
+	return &Slash{Vote1: DecodeVote(vote1), Vote2: DecodeVote(vote2)}
 }
 
 // PackTx packs transaction to byte array using protobuf
