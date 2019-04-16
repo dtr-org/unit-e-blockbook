@@ -5,6 +5,7 @@ import (
 	"blockbook/bchain/coins/btc"
 	"encoding/hex"
 	"errors"
+	"strings"
 
 	"github.com/jakm/btcutil"
 
@@ -24,12 +25,11 @@ const (
 	OpEndif     byte = 0x68
 	OpReturn    byte = 0x6a
 
-	OpDup          byte = 0x76
-	OpEqualverify  byte = 0x88
-	OpHash160      byte = 0xa9
-	OpChecksig     byte = 0xac
-	OpCheckvotesig byte = 0xb3
-	OpSlashable    byte = 0xb4
+	OpDup         byte = 0x76
+	OpEqualverify byte = 0x88
+	OpHash160     byte = 0xa9
+	OpChecksig    byte = 0xac
+	OpCheckCommit byte = 0xb3
 )
 
 // Network bytes
@@ -289,33 +289,23 @@ func matchPayToPublicKeyHash(script []byte, ofs int) bool {
 }
 
 // Extra-fast test for pay-vote-slash script hash CScripts:
-func matchPayVoteSlashScript(script []byte, ofs int) bool {
-	return len(script)-ofs == 103 &&
-		matchVoteScript(script, 0) &&
+func matchFinalizerCommitScript(script []byte, ofs int) bool {
+	return len(script)-ofs == 64 &&
+		matchCommitScript(script, 0) &&
 		script[ofs+35] == OpIf &&
 		script[ofs+36] == OpTrue &&
 		script[ofs+37] == OpElse &&
-		matchSlashScript(script, 38) &&
-		script[ofs+73] == OpNotif &&
-		matchPayToPublicKeyHash(script, 74) &&
-		script[ofs+99] == OpElse &&
-		script[ofs+100] == OpTrue &&
-		script[ofs+101] == OpEndif &&
-		script[ofs+102] == OpEndif
+		matchPayToPublicKeyHash(script, 38) &&
+		script[ofs+63] == OpEndif
 }
 
-func matchVoteScript(script []byte, ofs int) bool {
-	matchesVoteScript := len(script)-ofs >= 35 && script[ofs] == 0x21 && script[ofs+34] == OpCheckvotesig
+func matchCommitScript(script []byte, ofs int) bool {
+	matchesVoteScript := len(script)-ofs >= 35 && script[ofs] == 0x21 && script[ofs+34] == OpCheckCommit
 	return matchesVoteScript
 }
 
-func matchSlashScript(script []byte, ofs int) bool {
-	matchesSlashScript := len(script)-ofs >= 35 && script[ofs] == 0x21 && script[ofs+34] == OpSlashable
-	return matchesSlashScript
-}
-
 func extractPayVoteSlashScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
-	addr, err := btcutil.NewAddressPubKeyHash(script[77:97], params)
+	addr, err := btcutil.NewAddressPubKeyHash(script[41:61], params)
 	if err != nil {
 		return nil, false, err
 	}
@@ -324,7 +314,7 @@ func extractPayVoteSlashScriptAddrs(script []byte, params *chaincfg.Params) ([]s
 }
 
 func isPayVoteSlashScript(script []byte) bool {
-	return len(script) == 103 && matchPayVoteSlashScript(script, 0)
+	return matchFinalizerCommitScript(script, 0)
 }
 
 // IsOpReturnScript returns whether script is OP_RETURN-type script
