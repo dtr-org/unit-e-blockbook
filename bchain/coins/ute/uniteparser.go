@@ -179,6 +179,12 @@ func GetOp(script []byte, ofs uint64) (uint64, []byte, error) {
 	return ofs + 1, []byte{opcode}, nil
 }
 
+func reverse(arr *[]byte) {
+	for i, j := 0, len(*arr)-1; i < j; i, j = i+1, j-1 {
+		(*arr)[i], (*arr)[j] = (*arr)[j], (*arr)[i]
+	}
+}
+
 // DecodeVote returns decoded vote from script
 func DecodeVote(voteScript []byte) *Vote {
 	// read voteSig
@@ -189,18 +195,21 @@ func DecodeVote(voteScript []byte) *Vote {
 
 	// read validatorAddress
 	ofs, validatorAddress, err := GetOp(voteScript, ofs)
+	reverse(&validatorAddress)
 	if err != nil {
 		return nil
 	}
 
 	// read targetHash
 	ofs, targetHash, err := GetOp(voteScript, ofs)
+	reverse(&targetHash)
 	if err != nil {
 		return nil
 	}
 
 	// read sourceEpochVec
 	ofs, sourceEpochV, err := GetOp(voteScript, ofs)
+	reverse(&sourceEpochV)
 	if err != nil {
 		return nil
 	}
@@ -208,6 +217,7 @@ func DecodeVote(voteScript []byte) *Vote {
 
 	// read targetEpochVec
 	ofs, targetEpochV, err := GetOp(voteScript, ofs)
+	reverse(&targetEpochV)
 	if err != nil {
 		return nil
 	}
@@ -231,6 +241,7 @@ func ExtractVoteFromSignature(sigHex string) *Vote {
 
 	// read vote
 	ofs, vote, err := GetOp(script, ofs)
+
 	if err != nil {
 		return nil
 	}
