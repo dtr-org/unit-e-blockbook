@@ -409,6 +409,7 @@ func getTemplateFuncMap(extraFuncs template.FuncMap) template.FuncMap {
 		"stringInSlice":       stringInSlice,
 		"formatTxType":        func(t uint32) string { return string(t) },
 		"extractVoteFromTx":   func(tx *api.Tx) string { return "" },
+		"extractSlashFromTx":  func(tx *api.Tx) string { return "" },
 	}
 
 	// Also allow for overwriting

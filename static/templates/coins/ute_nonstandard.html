@@ -33,6 +33,46 @@
 </div>
 {{end}}
 
+{{define "slash"}}{{$tx := .Tx}}
+    {{$decodedSlash := extractSlashFromTx $tx}}
+<div class="data-div">
+    <table class="table data-table">
+        <tbody>
+            <tr>
+                <td style="width: 15%;">Validator address</td>
+                <td class="ellipsis data">
+                    {{$decodedSlash.Vote1.ValidatorAddress}}
+                </td>
+            <tr>
+        </tbody>
+    </table>
+</div>
+<div class="data-div">
+    <table class="table data-table">
+        <tbody>
+            <tr>
+                <td style="width: 15%;"></td>
+                <td style="width: 10%;">Source Epoch</td>
+                <td style="width: 10%;">Target Epoch</td>
+                <td>Target</td>
+            </tr>
+            <tr>
+                <td style="width: 15%;">Previous Vote</td>
+                <td class="data" style="width: 10%;">{{$decodedSlash.Vote1.SourceEpoch}}</td>
+                <td class="data" style="width: 10%;">{{$decodedSlash.Vote1.TargetEpoch}}</td>
+                <td class="data">{{$decodedSlash.Vote1.TargetHash}}</td>
+            </tr>
+            <tr>
+                <td style="width: 15%;">Offending Vote</td>
+                <td class="data" style="width: 10%;">{{$decodedSlash.Vote2.SourceEpoch}}</td>
+                <td class="data" style="width: 10%;">{{$decodedSlash.Vote2.TargetEpoch}}</td>
+                <td class="data">{{$decodedSlash.Vote2.TargetHash}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{{end}}
+
 {{define "nonstandard_partial"}}{{$cs := .CoinShortcut}}{{$tx := .Tx}}{{$addr := .AddrStr}}
 <div class="alert alert-data" style="background-color:lightgoldenrodyellow;">
     <div class="row line-bot">
@@ -140,7 +180,12 @@
     {{/* {{ workaround untill ADR-21 is implemented }} */}}
     {{ $vin0 := index $tx.Vin 0 }}
     {{- if $vin0.ScriptSig.Hex -}}
-        {{- if eq $tx.TxType 3}}{{template "vote" .}}{{else}}{{template "nonstandard_partial" .}}{{end -}}
+        {{- if eq $tx.TxType 3}}{{template "vote" .}}{{end -}}
+        {{- if eq $tx.TxType 2}}{{template "nonstandard_partial" .}}{{end -}}
+        {{- if eq $tx.TxType 4}}{{template "nonstandard_partial" .}}{{end -}}
+        {{- if eq $tx.TxType 5}}{{template "slash" .}}{{end -}}
+        {{- if eq $tx.TxType 6}}{{template "nonstandard_partial" .}}{{end -}}
+        {{- if eq $tx.TxType 7}}{{template "nonstandard_partial" .}}{{end -}}
         {{/* {{- if eq $tx.TxType 2}}{{template "deposit" .}}{{end -}}
            * {{- if eq $tx.TxType 4}}{{template "logout" .}}{{end -}}
            * {{- if eq $tx.TxType 5}}{{template "slash" .}}{{end -}}

@@ -62,6 +62,10 @@ func (u *UniteRPC) extractVoteFromTx(tx *api.Tx) *Vote {
 	return ExtractVoteFromSignature(tx.Vin[0].ScriptSig.Hex)
 }
 
+func (u *UniteRPC) extractSlashFromTx(tx *api.Tx) *Slash {
+	return ExtractSlashFromSignature(tx.Vin[0].ScriptSig.Hex)
+}
+
 // NewUniteHTMLHandler creates the Unit-e's HTML handler and populates it's templates
 func NewUniteHTMLHandler(u *UniteRPC) UniteHTMLHandler {
 	h := UniteHTMLHandler{
@@ -254,8 +258,9 @@ func (h *UniteHTMLHandler) GetExtraNavItems() map[string]string {
 // GetExtraFuncMap returns the extra functions to be registered in templates
 func (h *UniteHTMLHandler) GetExtraFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"formatTxType":      h.unite.txTypeToString,
-		"extractVoteFromTx": h.unite.extractVoteFromTx,
+		"formatTxType":       h.unite.txTypeToString,
+		"extractVoteFromTx":  h.unite.extractVoteFromTx,
+		"extractSlashFromTx": h.unite.extractSlashFromTx,
 	}
 }
 
