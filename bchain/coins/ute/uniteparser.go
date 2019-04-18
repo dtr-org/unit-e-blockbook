@@ -5,7 +5,6 @@ import (
 	"blockbook/bchain/coins/btc"
 	"encoding/hex"
 	"errors"
-	"strings"
 
 	"github.com/jakm/btcutil"
 
