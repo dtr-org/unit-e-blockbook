@@ -311,8 +311,9 @@ func matchFinalizerCommitScript(script []byte, ofs int) bool {
 }
 
 func matchCommitScript(script []byte, ofs int) bool {
-	matchesVoteScript := len(script)-ofs >= 35 && script[ofs] == 0x21 && script[ofs+34] == OpCheckCommit
-	return matchesVoteScript
+	return len(script)-ofs >= 35 &&
+		script[ofs] == 0x21 &&
+		script[ofs+34] == OpCheckCommit
 }
 
 func extractPayVoteSlashScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
