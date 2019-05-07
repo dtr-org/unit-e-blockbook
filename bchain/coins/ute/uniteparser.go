@@ -10,6 +10,8 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/jakm/btcutil"
 	"github.com/jakm/btcutil/chaincfg"
+
+	"golang.org/x/crypto/ripemd160"
 )
 
 // Script opcodes
@@ -329,14 +331,14 @@ func isPayVoteSlashScript(script []byte) bool {
 }
 
 func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
-	raw_pubkey := script[23:55]
-	pubkey := append([]byte{0x03}, raw_pubkey...)
-	addr_pubkey, err := btcutil.NewAddressPubKey(pubkey, params)
+	hasher := ripemd160.New()
+	hasher.Write(script[23:55])
+	pkh := hasher.Sum(nil)
+	addr_pkh, err := btcutil.NewAddressPubKeyHash(pkh, params)
 	if err != nil {
 		return nil, false, err
 	}
 
-	addr_pkh := addr_pubkey.AddressPubKeyHash()
 	return []string{addr_pkh.EncodeAddress()}, true, nil
 }
 

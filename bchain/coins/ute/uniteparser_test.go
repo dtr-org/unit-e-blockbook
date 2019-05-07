@@ -271,7 +271,7 @@ func TestGetAddrDesc(t *testing.T) {
 							Hex:  "5114ca305850196fe3286cc480fa6e9dd445512755d920bb258d8efb687e03537da2a4fc9333ba76346ef4de46e91e83db728ca69c0a0c",
 							Type: "witness_v1_remotestake_keyhash",
 							Addresses: []string{
-								"n4K9y5hycDsBxqKydUcoNqwLnv2UWonotf",
+								"n3Qu8Gd7VjUeg1V1wLEeSHjDKqbaJjafc5",
 							},
 						},
 					},
