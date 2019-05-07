@@ -21,10 +21,14 @@ func init() {
 		panic(err)
 	}
 	if tosLink, err := box.MustString("tos_link"); err == nil {
-		if _, err := url.ParseRequestURI(tosLink); err == nil {
-			Text.TOSLink = strings.TrimSpace(tosLink)
+		if tosLink == "" {
+			Text.TOSLink = ""
 		} else {
-			panic(fmt.Sprint("tos_link is not valid URL:", err.Error()))
+			if _, err := url.ParseRequestURI(tosLink); err == nil {
+				Text.TOSLink = strings.TrimSpace(tosLink)
+			} else {
+				panic(fmt.Sprint("tos_link is not valid URL:", err.Error()))
+			}
 		}
 	} else {
 		panic(err)
