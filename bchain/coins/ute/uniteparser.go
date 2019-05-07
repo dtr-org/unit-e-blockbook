@@ -7,9 +7,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jakm/btcutil"
-
 	"github.com/btcsuite/btcd/wire"
+	"github.com/jakm/btcutil"
 	"github.com/jakm/btcutil/chaincfg"
 )
 
@@ -330,12 +329,15 @@ func isPayVoteSlashScript(script []byte) bool {
 }
 
 func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
-	addr, err := btcutil.NewAddressPubKeyHash(script[2:22], params)
+	raw_pubkey := script[23:55]
+	pubkey := append([]byte{0x03}, raw_pubkey...)
+	addr_pubkey, err := btcutil.NewAddressPubKey(pubkey, params)
 	if err != nil {
 		return nil, false, err
 	}
 
-	return []string{addr.EncodeAddress()}, true, nil
+	addr_pkh := addr_pubkey.AddressPubKeyHash()
+	return []string{addr_pkh.EncodeAddress()}, true, nil
 }
 
 // IsOpReturnScript returns whether script is OP_RETURN-type script

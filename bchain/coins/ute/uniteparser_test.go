@@ -268,8 +268,11 @@ func TestGetAddrDesc(t *testing.T) {
 						ValueSat: *big.NewInt(977517107),
 						N:        1,
 						ScriptPubKey: bchain.ScriptPubKey{
-							Hex:  "5114d792bcaaa3467041be0ab346023e762318c5d249203d3226d6497d727a39c72ba1a0087dc8b7a382da06f9da6e063404987a103949",
+							Hex:  "5114ca305850196fe3286cc480fa6e9dd445512755d920bb258d8efb687e03537da2a4fc9333ba76346ef4de46e91e83db728ca69c0a0c",
 							Type: "witness_v1_remotestake_keyhash",
+							Addresses: []string{
+								"n4K9y5hycDsBxqKydUcoNqwLnv2UWonotf",
+							},
 						},
 					},
 				},
@@ -281,7 +284,7 @@ func TestGetAddrDesc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for n, vout := range tt.args.vout {
-				if len(vout.ScriptPubKey.Addresses) == 1 {
+				if len(vout.ScriptPubKey.Addresses) != 0 {
 					got1, err := tt.args.parser.GetAddrDescFromVout(&vout)
 					if err != nil {
 						t.Errorf("GetAddrDescFromAddress() error = %v, vout = %d", err, n)
