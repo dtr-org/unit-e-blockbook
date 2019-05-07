@@ -7,10 +7,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jakm/btcutil"
-
 	"github.com/btcsuite/btcd/wire"
+	"github.com/jakm/btcutil"
 	"github.com/jakm/btcutil/chaincfg"
+
+	"golang.org/x/crypto/ripemd160"
 )
 
 // Script opcodes
@@ -329,6 +330,18 @@ func isPayVoteSlashScript(script []byte) bool {
 	return matchFinalizerCommitScript(script, 0)
 }
 
+func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
+	hasher := ripemd160.New()
+	hasher.Write(script[23:55])
+	pkh := hasher.Sum(nil)
+	addr_pkh, err := btcutil.NewAddressPubKeyHash(pkh, params)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return []string{addr_pkh.EncodeAddress()}, true, nil
+}
+
 // IsOpReturnScript returns whether script is OP_RETURN-type script
 func IsOpReturnScript(script []byte) bool {
 	matchesOpReturnScript := len(script) > 0 && script[0] == OpReturn
@@ -367,7 +380,13 @@ func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDe
 		return nil, errors.New("unit-e parser: could not decode script hex")
 	}
 
-	if isPayVoteSlashScript(script) {
+	if output.ScriptPubKey.Type == "witness_v1_remotestake_keyhash" {
+		addresses, _, err := extractRemoteStakingScriptAddrs(script, p.Params)
+		if err != nil {
+			return nil, errors.New("unit-e parser: could not extract address from remote staking (keyhash) transaction")
+		}
+		return p.GetAddrDescFromAddress(addresses[0])
+	} else if isPayVoteSlashScript(script) {
 		addresses, _, err := extractPayVoteSlashScriptAddrs(script, p.Params)
 		if err != nil {
 			return nil, errors.New("unit-e parser: could not extract address from payvoteslash")
