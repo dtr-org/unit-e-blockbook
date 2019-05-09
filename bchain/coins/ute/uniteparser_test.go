@@ -153,7 +153,7 @@ func TestParseOpReturn(t *testing.T) {
 	}
 
 	opRetAddr := TryParseOPReturn(opReturnHexBytes)
-	if opRetAddr != "OP_RETURN" {
+	if opRetAddr[0] != OpReturn {
 		t.Errorf("OpRetAddr is incorrect %s", opRetAddr)
 		return
 	}
@@ -171,8 +171,8 @@ func TestParseOpReturn(t *testing.T) {
 	}
 
 	opRetAddr = TryParseOPReturn(opReturnHexBytes)
-	if opRetAddr != "OP_RETURN aa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
-		t.Errorf("OpRetAddr is incorrect %s", opRetAddr)
+	if hex.EncodeToString(opRetAddr) != "6aaa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
+		t.Errorf("OpRetAddr is incorrect %s", hex.EncodeToString(opRetAddr))
 		return
 	}
 
@@ -190,8 +190,9 @@ func TestParseOpReturn(t *testing.T) {
 		t.Errorf("Unexpected error %s", err)
 		return
 	}
-	if string(desc) != "OP_RETURN aa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
-		t.Errorf("Desc from Vout is incorrect: %s", desc)
+
+	if hex.EncodeToString(desc) != "6aaa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
+		t.Errorf("Desc from Vout is incorrect: %s", hex.EncodeToString(desc))
 	}
 
 	desc, err = parser.GetAddrDescFromAddress(string(desc))
@@ -199,8 +200,9 @@ func TestParseOpReturn(t *testing.T) {
 		t.Errorf("Unexpected error %s", err)
 		return
 	}
-	if string(desc) != "OP_RETURN aa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
-		t.Errorf("Desc from Address is incorrect: %s", desc)
+
+	if hex.EncodeToString(desc) != "6aaa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
+		t.Errorf("Desc from Address is incorrect: %s", hex.EncodeToString(desc))
 	}
 
 	addrs, searchable, err := parser.GetAddressesFromAddrDesc(desc)
@@ -213,7 +215,7 @@ func TestParseOpReturn(t *testing.T) {
 		return
 	}
 	if len(addrs) != 1 || addrs[0] != "OP_RETURN aa21a9ed941b41ad0b6a2c6b93d98dd32ff22ae87dcf3b95b721102f5956b9d7a3d299f2" {
-		t.Errorf("Address from Desc is incorrect: %s", addrs[0])
+		t.Errorf("Address from Desc is incorrect: %s", addrs)
 	}
 
 	script, err := parser.GetScriptFromAddrDesc(desc)
