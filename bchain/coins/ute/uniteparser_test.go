@@ -230,9 +230,8 @@ func TestParseOpReturn(t *testing.T) {
 
 func TestGetAddrDesc(t *testing.T) {
 	type args struct {
-		vout         []bchain.Vout
-		parser       *UniteParser
-		wantsReverse bool
+		vout   []bchain.Vout
+		parser *UniteParser
 	}
 	tests := []struct {
 		name string
@@ -241,25 +240,22 @@ func TestGetAddrDesc(t *testing.T) {
 		{
 			name: "ute-1",
 			args: args{
-				vout:         testTx1.Vout,
-				parser:       NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{}),
-				wantsReverse: true,
+				vout:   testTx1.Vout,
+				parser: NewUniteParser(btc.GetChainParams("regtest"), &btc.Configuration{}),
 			},
 		},
 		{
 			name: "ute-commit",
 			args: args{
-				vout:         testCommitTx.Vout,
-				parser:       NewUniteParser(GetChainParams("test"), &btc.Configuration{}),
-				wantsReverse: false,
+				vout:   testCommitTx.Vout,
+				parser: NewUniteParser(GetChainParams("test"), &btc.Configuration{}),
 			},
 		},
 		{
 			name: "ute-admin",
 			args: args{
-				vout:         testAdminTx.Vout,
-				parser:       NewUniteParser(GetChainParams("test"), &btc.Configuration{}),
-				wantsReverse: false,
+				vout:   testAdminTx.Vout,
+				parser: NewUniteParser(GetChainParams("test"), &btc.Configuration{}),
 			},
 		},
 		{
@@ -278,8 +274,7 @@ func TestGetAddrDesc(t *testing.T) {
 						},
 					},
 				},
-				parser:       NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
-				wantsReverse: false,
+				parser: NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
 			},
 		},
 	}
@@ -305,7 +300,7 @@ func TestGetAddrDesc(t *testing.T) {
 					if !bytes.Equal(got1, got2) {
 						t.Errorf("Address descriptors mismatch: got1 = %v, got2 = %v", got1, got2)
 					}
-					if got3[0] != vout.ScriptPubKey.Addresses[0] && tt.args.wantsReverse {
+					if got3[0] != vout.ScriptPubKey.Addresses[0] {
 						t.Errorf("Address reverse lookup mismatch: got3 = %v, address = %v", got3, vout.ScriptPubKey.Addresses[0])
 					}
 				}
