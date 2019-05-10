@@ -277,6 +277,25 @@ func TestGetAddrDesc(t *testing.T) {
 				parser: NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
 			},
 		},
+		{
+			name: "ute-rs-scripthash",
+			args: args{
+				vout: []bchain.Vout{
+					bchain.Vout{
+						ValueSat: *big.NewInt(1),
+						N:        0,
+						ScriptPubKey: bchain.ScriptPubKey{
+							Hex:  "521409908c6b1618b28f9ba847f1d986a2c9980b734d2047fc43af4ebfee85d46e5af86e16573dcd6b1cd4713e30493d8b16b3d5884c77",
+							Type: "witness_v2_remotestake_scripthash",
+							Addresses: []string{
+								"uert1qgl7y8t6whlhgt4rwttuxu9jh8hxkk8x5wylrqjfa3vtt84vgf3ms2wvjrk",
+							},
+						},
+					},
+				},
+				parser: NewUniteParser(GetChainParams("regtest"), &btc.Configuration{}),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -329,7 +329,7 @@ func isPayVoteSlashScript(script []byte) bool {
 	return matchFinalizerCommitScript(script, 0)
 }
 
-func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
+func extractRemoteStakingPKHScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
 	hasher := ripemd160.New()
 	hasher.Write(script[23:55])
 	pkh := hasher.Sum(nil)
@@ -339,6 +339,15 @@ func extractRemoteStakingScriptAddrs(script []byte, params *chaincfg.Params) ([]
 	}
 
 	return []string{addr_pkh.EncodeAddress()}, true, nil
+}
+
+func extractRemoteStakingSHScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
+	addr_wsh, err := btcutil.NewAddressWitnessScriptHash(script[23:55], params)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return []string{addr_wsh.EncodeAddress()}, true, nil
 }
 
 // IsOpReturnScript returns whether script is OP_RETURN-type script
@@ -357,12 +366,7 @@ func (p *UniteParser) GetAddressesFromAddrDesc(addrDesc bchain.AddressDescriptor
 		return []string{"OP_RETURN " + hex.EncodeToString(addrDesc[1:])}, false, nil
 	}
 
-	addresses, searchable, err := p.OutputScriptToAddressesFunc(addrDesc)
-	if err == nil {
-		return addresses, searchable, nil
-	}
-
-	return nil, false, err
+	return p.OutputScriptToAddressesFunc(addrDesc)
 }
 
 func (p *UniteParser) convertAddrToStandard(address string) (string, error) {
@@ -378,9 +382,15 @@ func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDe
 	}
 
 	if output.ScriptPubKey.Type == "witness_v1_remotestake_keyhash" {
-		addresses, _, err := extractRemoteStakingScriptAddrs(script, p.Params)
+		addresses, _, err := extractRemoteStakingPKHScriptAddrs(script, p.Params)
 		if err != nil {
 			return nil, errors.New("unit-e parser: could not extract address from remote staking (keyhash) transaction")
+		}
+		return p.GetAddrDescFromAddress(addresses[0])
+	} else if output.ScriptPubKey.Type == "witness_v2_remotestake_scripthash" {
+		addresses, _, err := extractRemoteStakingSHScriptAddrs(script, p.Params)
+		if err != nil {
+			return nil, errors.New("unit-e parser: could not extract address from remote staking (scripthash) transaction")
 		}
 		return p.GetAddrDescFromAddress(addresses[0])
 	} else if isPayVoteSlashScript(script) {
