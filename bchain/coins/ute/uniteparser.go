@@ -5,11 +5,11 @@ import (
 	"blockbook/bchain/coins/btc"
 	"encoding/hex"
 	"errors"
-	"strings"
 
 	"github.com/btcsuite/btcd/wire"
 	"github.com/jakm/btcutil"
 	"github.com/jakm/btcutil/chaincfg"
+	"github.com/jakm/btcutil/txscript"
 
 	"golang.org/x/crypto/ripemd160"
 )
@@ -94,7 +94,6 @@ func NewUniteParser(params *chaincfg.Params, c *btc.Configuration) *UniteParser 
 		BitcoinParser: btc.NewBitcoinParser(params, c),
 		baseparser:    &bchain.BaseParser{},
 	}
-	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses
 	p.Params = params
 	return p
 }
@@ -349,19 +348,21 @@ func IsOpReturnScript(script []byte) bool {
 }
 
 // This function is given internal representation, so for now it's the address
-func (p *UniteParser) outputScriptToAddresses(script []byte) ([]string, bool, error) {
-	if len(script) == 20 {
-		addr, err := btcutil.NewAddressPubKeyHash(script, p.Params)
-		if err != nil {
-			return nil, false, err
-		}
-		return []string{addr.EncodeAddress()}, true, nil
-	} else if strings.HasPrefix(string(script), p.Params.Bech32HRPSegwit) {
-		return []string{string(script)}, true, nil
-	} else if len(script) != 0 {
-		return []string{string(script)}, false, nil
+func (p *UniteParser) GetAddressesFromAddrDesc(addrDesc bchain.AddressDescriptor) ([]string, bool, error) {
+	if len(addrDesc) == 0 {
+		return nil, false, nil
 	}
-	return nil, false, nil
+
+	if addrDesc[0] == OpReturn {
+		return []string{"OP_RETURN " + hex.EncodeToString(addrDesc[1:])}, false, nil
+	}
+
+	addresses, searchable, err := p.OutputScriptToAddressesFunc(addrDesc)
+	if err == nil {
+		return addresses, searchable, nil
+	}
+
+	return nil, false, err
 }
 
 func (p *UniteParser) convertAddrToStandard(address string) (string, error) {
@@ -371,10 +372,6 @@ func (p *UniteParser) convertAddrToStandard(address string) (string, error) {
 
 // GetAddrDescFromVout returns internal address representation (descriptor) of given transaction output
 func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDescriptor, error) {
-	if len(output.ScriptPubKey.Addresses) == 1 {
-		return p.GetAddrDescFromAddress(output.ScriptPubKey.Addresses[0])
-	}
-
 	script, err := hex.DecodeString(output.ScriptPubKey.Hex)
 	if err != nil {
 		return nil, errors.New("unit-e parser: could not decode script hex")
@@ -393,8 +390,11 @@ func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDe
 		}
 		return p.GetAddrDescFromAddress(addresses[0])
 	} else if IsOpReturnScript(script) {
-		or := TryParseOPReturn(script)
-		return []byte(or), nil
+		return TryParseOPReturn(script), nil
+	}
+
+	if len(output.ScriptPubKey.Addresses) != 0 {
+		return p.GetAddrDescFromAddress(output.ScriptPubKey.Addresses[0])
 	}
 
 	return nil, errors.New("unit-e parser: unknown address")
@@ -402,16 +402,17 @@ func (p *UniteParser) GetAddrDescFromVout(output *bchain.Vout) (bchain.AddressDe
 
 // GetAddrDescFromAddress Returns address encoded to bytes
 func (p *UniteParser) GetAddrDescFromAddress(address string) (bchain.AddressDescriptor, error) {
-	pkhAddr, err := p.convertAddrToStandard(address)
+	da, err := btcutil.DecodeAddress(address, p.Params)
 	if err != nil {
-		return nil, err
-	}
-	da, err := btcutil.DecodeAddress(pkhAddr, p.Params)
-	if err == nil {
-		return da.ScriptAddress(), nil
+		return []byte(address), nil
 	}
 
-	return []byte(address), nil
+	addr, err := txscript.PayToAddrScript(da)
+	if err != nil {
+		return []byte(address), nil
+	}
+
+	return addr, nil
 }
 
 // GetScriptFromAddrDesc returns unchanged address as it's the internal type
@@ -421,17 +422,17 @@ func (p *UniteParser) GetScriptFromAddrDesc(addrDesc bchain.AddressDescriptor) (
 }
 
 // TryParseOPReturn tries to process OpReturn script and return its string representation
-func TryParseOPReturn(script []byte) string {
+func TryParseOPReturn(script []byte) []byte {
 	// trying 3 variants of OP_RETURN data
 	// 1) OP_RETURN
 	// 1) OP_RETURN OP_PUSHDATA1 <datalen> <data>
 	// 3) OP_RETURN <datalen> <data>
 	if len(script) == 0 || script[0] != OpReturn {
-		return ""
+		return []byte{}
 	}
 
 	if len(script) == 1 {
-		return "OP_RETURN"
+		return []byte{OpReturn}
 	}
 
 	var data []byte
@@ -448,21 +449,9 @@ func TryParseOPReturn(script []byte) string {
 		data = script[2:]
 	}
 	if l == len(data) {
-		isASCII := true
-		for _, c := range data {
-			if c < 32 || c > 127 {
-				isASCII = false
-				break
-			}
-		}
-		var ed string
-		if isASCII {
-			ed = "(" + string(data) + ")"
-		} else {
-			ed = hex.EncodeToString(data)
-		}
-		return "OP_RETURN " + ed
+		data = append([]byte{OpReturn}, data...)
+		return data
 	}
 
-	return ""
+	return script
 }
