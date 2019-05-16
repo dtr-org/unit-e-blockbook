@@ -333,21 +333,21 @@ func extractRemoteStakingPKHScriptAddrs(script []byte, params *chaincfg.Params) 
 	hasher := ripemd160.New()
 	hasher.Write(script[23:55])
 	pkh := hasher.Sum(nil)
-	addr_pkh, err := btcutil.NewAddressPubKeyHash(pkh, params)
+	addrPkh, err := btcutil.NewAddressPubKeyHash(pkh, params)
 	if err != nil {
 		return nil, false, err
 	}
 
-	return []string{addr_pkh.EncodeAddress()}, true, nil
+	return []string{addrPkh.EncodeAddress()}, true, nil
 }
 
 func extractRemoteStakingSHScriptAddrs(script []byte, params *chaincfg.Params) ([]string, bool, error) {
-	addr_wsh, err := btcutil.NewAddressWitnessScriptHash(script[23:55], params)
+	addrWsh, err := btcutil.NewAddressWitnessScriptHash(script[23:55], params)
 	if err != nil {
 		return nil, false, err
 	}
 
-	return []string{addr_wsh.EncodeAddress()}, true, nil
+	return []string{addrWsh.EncodeAddress()}, true, nil
 }
 
 // IsOpReturnScript returns whether script is OP_RETURN-type script
