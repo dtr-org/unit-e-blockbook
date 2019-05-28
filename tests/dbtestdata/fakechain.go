@@ -188,6 +188,10 @@ func (c *fakeBlockChain) GetChainParser() bchain.BlockChainParser {
 	return c.Parser
 }
 
+func (c *fakeBlockChain) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}
+
 // GetMempoolTransactions returns transactions in mempool
 func (c *fakeBlockChain) GetMempoolTransactions() ([]string, error) {
 	return nil, errors.New("Not implemented")

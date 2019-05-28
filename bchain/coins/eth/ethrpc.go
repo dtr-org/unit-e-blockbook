@@ -757,3 +757,7 @@ func (b *EthereumRPC) EthereumTypeGetNonce(addrDesc bchain.AddressDescriptor) (u
 func (b *EthereumRPC) GetChainParser() bchain.BlockChainParser {
 	return b.Parser
 }
+
+func (b *EthereumRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}

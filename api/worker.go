@@ -128,7 +128,7 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 	var ethSpecific *EthereumSpecific
 	var blockhash string
 	if bchainTx.Confirmations > 0 {
-		if w.chainType == bchain.ChainBitcoinType {
+		if w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType {
 			ta, err = w.db.GetTxAddresses(bchainTx.Txid)
 			if err != nil {
 				return nil, errors.Annotatef(err, "GetTxAddresses %v", bchainTx.Txid)
@@ -151,7 +151,7 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 		vin.Sequence = int64(bchainVin.Sequence)
 		vin.Hex = bchainVin.ScriptSig.Hex
 		vin.Coinbase = bchainVin.Coinbase
-		if w.chainType == bchain.ChainBitcoinType {
+		if w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType {
 			//  bchainVin.Txid=="" is coinbase transaction
 			if bchainVin.Txid != "" {
 				// load spending addresses from TxAddresses
@@ -238,7 +238,7 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 			}
 		}
 	}
-	if w.chainType == bchain.ChainBitcoinType {
+	if w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType {
 		// for coinbase transactions valIn is 0
 		feesSat.Sub(&valInSat, &valOutSat)
 		if feesSat.Sign() == -1 {
@@ -301,10 +301,12 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 			return nil, err
 		}
 	}
+
 	// for mempool transaction get first seen time
 	if bchainTx.Confirmations == 0 {
 		bchainTx.Blocktime = int64(w.mempool.GetTransactionTime(bchainTx.Txid))
 	}
+
 	r := &Tx{
 		Blockhash:        blockhash,
 		Blockheight:      int(height),
@@ -316,6 +318,7 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 		ValueInSat:       (*Amount)(pValInSat),
 		ValueOutSat:      (*Amount)(&valOutSat),
 		Version:          bchainTx.Version,
+		TxType:           bchainTx.TxType,
 		Hex:              bchainTx.Hex,
 		Vin:              vins,
 		Vout:             vouts,
@@ -324,6 +327,7 @@ func (w *Worker) GetTransactionFromBchainTx(bchainTx *bchain.Tx, height uint32, 
 		TokenTransfers:   tokens,
 		EthereumSpecific: ethSpecific,
 	}
+
 	return r, nil
 }
 
@@ -459,6 +463,7 @@ func (w *Worker) txFromTxAddress(txid string, ta *db.TxAddresses, bi *db.BlockIn
 	r := &Tx{
 		Blockhash:     bi.Hash,
 		Blockheight:   int(ta.Height),
+		TxType:        uint32(ta.TxType),
 		Blocktime:     bi.Time,
 		Confirmations: bestheight - ta.Height + 1,
 		FeesSat:       (*Amount)(&feesSat),
@@ -607,7 +612,7 @@ func (w *Worker) txFromTxid(txid string, bestheight uint32, option AccountDetail
 	var tx *Tx
 	var err error
 	// only ChainBitcoinType supports TxHistoryLight
-	if option == AccountDetailsTxHistoryLight && w.chainType == bchain.ChainBitcoinType {
+	if option == AccountDetailsTxHistoryLight && (w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType) {
 		ta, err := w.db.GetTxAddresses(txid)
 		if err != nil {
 			return nil, errors.Annotatef(err, "GetTxAddresses %v", txid)
@@ -771,7 +776,7 @@ func (w *Worker) GetAddress(address string, page int, txsOnPage int, option Acco
 			}
 		}
 	}
-	if w.chainType == bchain.ChainBitcoinType {
+	if w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType {
 		totalReceived = ba.ReceivedSat()
 		totalSent = &ba.SentSat
 	}
@@ -902,7 +907,7 @@ func (w *Worker) getAddrDescUtxo(addrDesc bchain.AddressDescriptor, ba *db.AddrB
 
 // GetAddressUtxo returns unspent outputs for given address
 func (w *Worker) GetAddressUtxo(address string, onlyConfirmed bool) (Utxos, error) {
-	if w.chainType != bchain.ChainBitcoinType {
+	if w.chainType == bchain.ChainEthereumType {
 		return nil, NewAPIError("Not supported", true)
 	}
 	start := time.Now()
@@ -1051,7 +1056,7 @@ func (w *Worker) ComputeFeeStats(blockFrom, blockTo int, stopCompute chan os.Sig
 				Time:   bi.Time,
 			}
 			txids := bi.Txids
-			if w.chainType == bchain.ChainBitcoinType {
+			if w.chainType == bchain.ChainBitcoinType || w.chainType == bchain.ChainUnitEType {
 				// skip the coinbase transaction
 				txids = txids[1:]
 			}

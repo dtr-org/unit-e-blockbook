@@ -47,12 +47,14 @@ type PublicServer struct {
 	chain            bchain.BlockChain
 	chainParser      bchain.BlockChainParser
 	mempool          bchain.Mempool
+	coinHTMLHandler  bchain.CoinHTMLHandler
 	api              *api.Worker
 	explorerURL      string
 	internalExplorer bool
 	metrics          *common.Metrics
 	is               *common.InternalState
 	templates        []*template.Template
+	templatesFuncMap template.FuncMap
 	debug            bool
 }
 
@@ -94,19 +96,27 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		chain:            chain,
 		chainParser:      chain.GetChainParser(),
 		mempool:          mempool,
+		coinHTMLHandler:  chain.GetCoinHTMLHandler(),
 		explorerURL:      explorerURL,
 		internalExplorer: explorerURL == "",
 		metrics:          metrics,
 		is:               is,
 		debug:            debugMode,
 	}
-	s.templates = s.parseTemplates()
+
+	if s.coinHTMLHandler != nil {
+		s.templatesFuncMap = s.getTemplateFuncMap(s.coinHTMLHandler.GetExtraFuncMap())
+	} else {
+		s.templatesFuncMap = s.getTemplateFuncMap(nil)
+	}
+
+	s.templates = s.parseTemplates(s.templatesFuncMap)
 
 	// map only basic functions, the rest is enabled by method MapFullPublicInterface
 	serveMux.Handle(path+"favicon.ico", http.FileServer(http.Dir("./static/")))
 	serveMux.Handle(path+"static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	// default handler
-	serveMux.HandleFunc(path, s.htmlTemplateHandler(s.explorerIndex))
+	serveMux.HandleFunc(path, s.htmlPublicTemplateHandler(s.explorerIndex))
 	// default API handler
 	serveMux.HandleFunc(path+"api/", s.jsonHandler(s.apiIndex, apiV2))
 
@@ -132,15 +142,20 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 	serveMux.Handle(path+"test-websocket.html", http.FileServer(http.Dir("./static/")))
 	if s.internalExplorer {
 		// internal explorer handlers
-		serveMux.HandleFunc(path+"tx/", s.htmlTemplateHandler(s.explorerTx))
-		serveMux.HandleFunc(path+"address/", s.htmlTemplateHandler(s.explorerAddress))
-		serveMux.HandleFunc(path+"xpub/", s.htmlTemplateHandler(s.explorerXpub))
-		serveMux.HandleFunc(path+"search/", s.htmlTemplateHandler(s.explorerSearch))
-		serveMux.HandleFunc(path+"blocks", s.htmlTemplateHandler(s.explorerBlocks))
-		serveMux.HandleFunc(path+"block/", s.htmlTemplateHandler(s.explorerBlock))
-		serveMux.HandleFunc(path+"spending/", s.htmlTemplateHandler(s.explorerSpendingTx))
-		serveMux.HandleFunc(path+"sendtx", s.htmlTemplateHandler(s.explorerSendTx))
-		serveMux.HandleFunc(path+"mempool", s.htmlTemplateHandler(s.explorerMempool))
+		serveMux.HandleFunc(path+"tx/", s.htmlPublicTemplateHandler(s.explorerTx))
+		serveMux.HandleFunc(path+"address/", s.htmlPublicTemplateHandler(s.explorerAddress))
+		serveMux.HandleFunc(path+"xpub/", s.htmlPublicTemplateHandler(s.explorerXpub))
+		serveMux.HandleFunc(path+"search/", s.htmlPublicTemplateHandler(s.explorerSearch))
+		serveMux.HandleFunc(path+"blocks", s.htmlPublicTemplateHandler(s.explorerBlocks))
+		serveMux.HandleFunc(path+"block/", s.htmlPublicTemplateHandler(s.explorerBlock))
+		serveMux.HandleFunc(path+"spending/", s.htmlPublicTemplateHandler(s.explorerSpendingTx))
+		serveMux.HandleFunc(path+"sendtx", s.htmlPublicTemplateHandler(s.explorerSendTx))
+		serveMux.HandleFunc(path+"mempool", s.htmlPublicTemplateHandler(s.explorerMempool))
+
+		// Add coin specific handlers
+		if s.coinHTMLHandler != nil {
+			serveMux.HandleFunc(path+"coin/", s.htmlCoinSpecificTemplateHandler())
+		}
 	} else {
 		// redirect to wallet requests for tx and address, possibly to external site
 		serveMux.HandleFunc(path+"tx/", s.txRedirect)
@@ -301,7 +316,7 @@ func (s *PublicServer) jsonHandler(handler func(r *http.Request, apiVersion int)
 }
 
 func (s *PublicServer) newTemplateData() *TemplateData {
-	return &TemplateData{
+	t := &TemplateData{
 		CoinName:         s.is.Coin,
 		CoinShortcut:     s.is.CoinShortcut,
 		CoinLabel:        s.is.CoinLabel,
@@ -309,6 +324,12 @@ func (s *PublicServer) newTemplateData() *TemplateData {
 		InternalExplorer: s.internalExplorer && !s.is.InitialSync,
 		TOSLink:          api.Text.TOSLink,
 	}
+
+	if s.coinHTMLHandler != nil {
+		t.ExtraNavItems = s.coinHTMLHandler.GetExtraNavItems()
+	}
+
+	return t
 }
 
 func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
@@ -317,47 +338,49 @@ func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
 	return td
 }
 
-func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
+func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var t tpl
+		var templateToRender *template.Template
 		var data *TemplateData
-		var err error
 		defer func() {
 			if e := recover(); e != nil {
 				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
+
 				debug.PrintStack()
-				t = errorInternalTpl
+				templateToRender = s.templates[errorInternalTpl]
+
 				if s.debug {
 					data = s.newTemplateDataWithError(fmt.Sprint("Internal server error: recovered from panic ", e))
 				} else {
 					data = s.newTemplateDataWithError("Internal server error")
 				}
 			}
-			// noTpl means the handler completely handled the request
-			if t != noTpl {
+			// templateToRender == nil means the handler completely handled the request
+			if templateToRender != nil {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				// return 500 Internal Server Error with errorInternalTpl
-				if t == errorInternalTpl {
+				if templateToRender == s.templates[errorInternalTpl] {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-				if err := s.templates[t].ExecuteTemplate(w, "base.html", data); err != nil {
+				if err := templateToRender.ExecuteTemplate(w, "base.html", data); err != nil {
 					glog.Error(err)
 				}
 			}
 		}()
+
 		if s.debug {
 			// reload templates on each request
 			// to reflect changes during development
-			s.templates = s.parseTemplates()
+			s.templates = s.parseTemplates(s.templatesFuncMap)
 		}
-		t, data, err = handler(w, r)
-		if err != nil || (data == nil && t != noTpl) {
-			t = errorInternalTpl
+		templateToRender, data, err := handler(w, r)
+		if err != nil || (data == nil && templateToRender != nil) {
+			templateToRender = s.templates[errorInternalTpl]
 			if apiErr, ok := err.(*api.APIError); ok {
 				data = s.newTemplateData()
 				data.Error = apiErr
 				if apiErr.Public {
-					t = errorTpl
+					templateToRender = s.templates[errorTpl]
 				}
 			} else {
 				if err != nil {
@@ -371,6 +394,38 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 			}
 		}
 	}
+}
+
+func (s *PublicServer) htmlCoinSpecificTemplateHandler() func(w http.ResponseWriter, r *http.Request) {
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+		templateToRender, extraData, err := s.coinHTMLHandler.HandleCoinRequest(w, r)
+		if err != nil {
+			return nil, nil, err
+		}
+		templateToRender.Funcs(s.templatesFuncMap)
+		data := s.newTemplateData()
+		data.ExtraData = extraData
+		return templateToRender, data, err
+	}
+
+	return s.htmlTemplateHandler(wrapperFn)
+}
+
+func (s *PublicServer) htmlPublicTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
+	wrapperFn := func(w http.ResponseWriter, r *http.Request) (*template.Template, *TemplateData, error) {
+		if s.debug {
+			// reload templates on each request
+			// to reflect changes during development
+			s.templates = s.parseTemplates(s.templatesFuncMap)
+		}
+		t, data, err := handler(w, r)
+		if t == noTpl {
+			return nil, nil, nil
+		}
+		return s.templates[t], data, err
+	}
+
+	return s.htmlTemplateHandler(wrapperFn)
 }
 
 type tpl int
@@ -398,9 +453,11 @@ type TemplateData struct {
 	CoinLabel            string
 	InternalExplorer     bool
 	ChainType            bchain.ChainType
+	ExtraNavItems        map[string]string
 	Address              *api.Address
 	AddrStr              string
 	Tx                   *api.Tx
+	TxSpecific           json.RawMessage
 	Error                *api.APIError
 	Blocks               *api.Blocks
 	Block                *api.Block
@@ -415,9 +472,10 @@ type TemplateData struct {
 	SendTxHex            string
 	Status               string
 	NonZeroBalanceTokens bool
+	ExtraData            interface{}
 }
 
-func (s *PublicServer) parseTemplates() []*template.Template {
+func (s *PublicServer) getTemplateFuncMap(extraFuncs template.FuncMap) template.FuncMap {
 	templateFuncMap := template.FuncMap{
 		"formatTime":               formatTime,
 		"formatUnixTime":           formatUnixTime,
@@ -426,7 +484,20 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 		"setTxToTemplateData":      setTxToTemplateData,
 		"isOwnAddress":             isOwnAddress,
 		"isOwnAddresses":           isOwnAddresses,
+		"formatTxType":             func(t uint32) string { return string(t) },
+		"extractVoteFromTx":        func(tx *api.Tx) string { return "" },
+		"extractSlashFromTx":       func(tx *api.Tx) string { return "" },
 	}
+
+	// Also allow for overwriting
+	for k, v := range extraFuncs {
+		templateFuncMap[k] = v
+	}
+
+	return templateFuncMap
+}
+
+func (s *PublicServer) parseTemplates(templateFuncMap template.FuncMap) []*template.Template {
 	var createTemplate func(filenames ...string) *template.Template
 	if s.debug {
 		createTemplate = func(filenames ...string) *template.Template {
@@ -465,7 +536,9 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 			return t
 		}
 	}
+
 	t := make([]*template.Template, tplCount)
+
 	t[errorTpl] = createTemplate("./static/templates/error.html", "./static/templates/base.html")
 	t[errorInternalTpl] = createTemplate("./static/templates/error.html", "./static/templates/base.html")
 	t[indexTpl] = createTemplate("./static/templates/index.html", "./static/templates/base.html")
@@ -475,6 +548,10 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 		t[txTpl] = createTemplate("./static/templates/tx.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/base.html")
 		t[addressTpl] = createTemplate("./static/templates/address.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
 		t[blockTpl] = createTemplate("./static/templates/block.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
+	} else if s.chainParser.GetChainType() == bchain.ChainUnitEType {
+		t[txTpl] = template.Must(template.New("tx").Funcs(templateFuncMap).ParseFiles("./static/templates/tx.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/base.html"))
+		t[addressTpl] = template.Must(template.New("address").Funcs(templateFuncMap).ParseFiles("./static/templates/address.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/paging.html", "./static/templates/base.html"))
+		t[blockTpl] = template.Must(template.New("block").Funcs(templateFuncMap).ParseFiles("./static/templates/block.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/paging.html", "./static/templates/base.html"))
 	} else {
 		t[txTpl] = createTemplate("./static/templates/tx.html", "./static/templates/txdetail.html", "./static/templates/base.html")
 		t[addressTpl] = createTemplate("./static/templates/address.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html")
@@ -482,6 +559,7 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 	}
 	t[xpubTpl] = createTemplate("./static/templates/xpub.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html")
 	t[mempoolTpl] = createTemplate("./static/templates/mempool.html", "./static/templates/paging.html", "./static/templates/base.html")
+
 	return t
 }
 

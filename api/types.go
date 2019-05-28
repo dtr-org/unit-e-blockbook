@@ -179,6 +179,7 @@ type EthereumSpecific struct {
 type Tx struct {
 	Txid             string            `json:"txid"`
 	Version          int32             `json:"version,omitempty"`
+	TxType           uint32            `json:"txtype,omitempty"`
 	Locktime         uint32            `json:"lockTime,omitempty"`
 	Vin              []Vin             `json:"vin"`
 	Vout             []Vout            `json:"vout"`

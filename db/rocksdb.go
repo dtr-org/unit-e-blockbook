@@ -119,7 +119,7 @@ func NewRocksDB(path string, cacheSize, maxOpenFiles int, parser bchain.BlockCha
 
 	cfNames = append([]string{}, cfBaseNames...)
 	chainType := parser.GetChainType()
-	if chainType == bchain.ChainBitcoinType {
+	if chainType == bchain.ChainBitcoinType || chainType == bchain.ChainUnitEType {
 		cfNames = append(cfNames, cfNamesBitcoinType...)
 	} else if chainType == bchain.ChainEthereumType {
 		cfNames = append(cfNames, cfNamesEthereumType...)
@@ -315,7 +315,7 @@ func (d *RocksDB) ConnectBlock(block *bchain.Block) error {
 		return err
 	}
 	addresses := make(addressesMap)
-	if chainType == bchain.ChainBitcoinType {
+	if chainType == bchain.ChainBitcoinType || chainType == bchain.ChainUnitEType {
 		txAddressesMap := make(map[string]*TxAddresses)
 		balances := make(map[string]*AddrBalance)
 		if err := d.processAddressesBitcoinType(block, addresses, txAddressesMap, balances); err != nil {
@@ -395,6 +395,7 @@ func (to *TxOutput) Addresses(p bchain.BlockChainParser) ([]string, bool, error)
 // TxAddresses stores transaction inputs and outputs with amounts
 type TxAddresses struct {
 	Height  uint32
+	TxType  uint16
 	Inputs  []TxInput
 	Outputs []TxOutput
 }
@@ -510,7 +511,7 @@ func (d *RocksDB) processAddressesBitcoinType(block *bchain.Block, addresses add
 			return err
 		}
 		blockTxIDs[txi] = btxID
-		ta := TxAddresses{Height: block.Height}
+		ta := TxAddresses{Height: block.Height, TxType: uint16(tx.TxType)}
 		ta.Outputs = make([]TxOutput, len(tx.Vout))
 		txAddressesMap[string(btxID)] = &ta
 		blockTxAddresses[txi] = &ta
@@ -822,8 +823,8 @@ func (d *RocksDB) getTxAddresses(btxID []byte) (*TxAddresses, error) {
 	}
 	defer val.Free()
 	buf := val.Data()
-	// 2 is minimum length of addrBalance - 1 byte height, 1 byte inputs len, 1 byte outputs len
-	if len(buf) < 3 {
+	// 4 is minimum length of addrBalance - 1 byte height, 1 byte txType, 1 byte inputs len, 1 byte outputs len
+	if len(buf) < 4 {
 		return nil, nil
 	}
 	return unpackTxAddresses(buf)
@@ -860,6 +861,8 @@ func (d *RocksDB) AddrDescForOutpoint(outpoint bchain.Outpoint) bchain.AddressDe
 func packTxAddresses(ta *TxAddresses, buf []byte, varBuf []byte) []byte {
 	buf = buf[:0]
 	l := packVaruint(uint(ta.Height), varBuf)
+	buf = append(buf, varBuf[:l]...)
+	l = packVaruint(uint(ta.TxType), varBuf)
 	buf = append(buf, varBuf[:l]...)
 	l = packVaruint(uint(len(ta.Inputs)), varBuf)
 	buf = append(buf, varBuf[:l]...)
@@ -963,6 +966,9 @@ func unpackTxAddresses(buf []byte) (*TxAddresses, error) {
 	ta := TxAddresses{}
 	height, l := unpackVaruint(buf)
 	ta.Height = uint32(height)
+	txType, ll := unpackVaruint(buf[l:])
+	ta.TxType = uint16(txType)
+	l += ll
 	inputs, ll := unpackVaruint(buf[l:])
 	l += ll
 	ta.Inputs = make([]TxInput, inputs)

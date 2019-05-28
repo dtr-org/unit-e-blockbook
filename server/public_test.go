@@ -448,7 +448,7 @@ func httpTestsBitcoinType(t *testing.T, ts *httptest.Server) {
 			status:      http.StatusOK,
 			contentType: "application/json; charset=utf-8",
 			body: []string{
-				`{"hex":"","txid":"00b2c06055e5e90e9c82bd4181fde310104391a7fa4f289b1704e5d90caa3840","version":0,"locktime":0,"vin":[],"vout":[{"ValueSat":100000000,"value":0,"n":0,"scriptPubKey":{"hex":"76a914010d39800f86122416e28f485029acf77507169288ac","addresses":null}},{"ValueSat":12345,"value":0,"n":1,"scriptPubKey":{"hex":"76a9148bdf0aa3c567aa5975c2e61321b8bebbe7293df688ac","addresses":null}}],"confirmations":2,"time":22549300000,"blocktime":22549300000}`,
+				`{"hex":"","txid":"00b2c06055e5e90e9c82bd4181fde310104391a7fa4f289b1704e5d90caa3840","version":0,"locktime":0,"vin":[],"vout":[{"ValueSat":100000000,"value":0,"n":0,"scriptPubKey":{"hex":"76a914010d39800f86122416e28f485029acf77507169288ac","type":"","addresses":null}},{"ValueSat":12345,"value":0,"n":1,"scriptPubKey":{"hex":"76a9148bdf0aa3c567aa5975c2e61321b8bebbe7293df688ac","type":"","addresses":null}}],"confirmations":2,"time":22549300000,"blocktime":22549300000}`,
 			},
 		},
 		{
@@ -691,7 +691,7 @@ func socketioTestsBitcoinType(t *testing.T, ts *httptest.Server) {
 		{
 			name: "socketio getInfo",
 			req:  socketioReq{"getInfo", []interface{}{}},
-			want: `{"result":{"blocks":225494,"testnet":true,"network":"fakecoin","subversion":"/Fakecoin:0.0.1/","coin_name":"Fakecoin","about":"Blockbook - blockchain indexer for TREZOR wallet https://trezor.io/. Do not use for any other purpose."}}`,
+			want: `{"result":{"blocks":225494,"testnet":true,"network":"fakecoin","subversion":"/Fakecoin:0.0.1/","coin_name":"Fakecoin"}}`,
 		},
 		{
 			name: "socketio estimateFee",
@@ -744,7 +744,7 @@ func socketioTestsBitcoinType(t *testing.T, ts *httptest.Server) {
 		{
 			name: "socketio getBlockHeader",
 			req:  socketioReq{"getBlockHeader", []interface{}{225493}},
-			want: `{"result":{"hash":"0000000076fbbed90fd75b0e18856aa35baa984e9c9d444cf746ad85e94e2997","version":0,"confirmations":0,"height":0,"chainWork":"","nextHash":"","merkleRoot":"","time":0,"medianTime":0,"nonce":0,"bits":"","difficulty":0}}`,
+			want: `{"result":{"hash":"0000000076fbbed90fd75b0e18856aa35baa984e9c9d444cf746ad85e94e2997","version":0,"confirmations":0,"height":0,"chainWork":"","nextHash":"","merkleRoot":"","time":0,"medianTime":0,"bits":"","difficulty":0}}`,
 		},
 		{
 			name: "socketio getDetailedTransaction",

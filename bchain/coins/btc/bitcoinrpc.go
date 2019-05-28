@@ -908,3 +908,12 @@ func (b *BitcoinRPC) Call(req interface{}, res interface{}) error {
 	}
 	return safeDecodeResponse(httpRes.Body, &res)
 }
+
+// GetChainParser returns BlockChainParser
+func (b *BitcoinRPC) GetChainParser() bchain.BlockChainParser {
+	return b.Parser
+}
+
+func (b *BitcoinRPC) GetCoinHTMLHandler() bchain.CoinHTMLHandler {
+	return nil
+}

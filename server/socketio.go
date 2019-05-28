@@ -270,6 +270,7 @@ type resTx struct {
 	Height         int    `json:"height"`
 	BlockTimestamp int64  `json:"blockTimestamp,omitempty"`
 	Version        int    `json:"version"`
+	TxType         uint32 `json:"txtype,omitempty"`
 	Hash           string `json:"hash"`
 	Locktime       int    `json:"locktime,omitempty"`
 	// Size           int         `json:"size,omitempty"`
@@ -347,6 +348,7 @@ func txToResTx(tx *api.Tx) resTx {
 		Outputs:        outputs,
 		OutputSatoshis: tx.ValueOutSat.AsInt64(),
 		Version:        int(tx.Version),
+		TxType:         tx.TxType,
 	}
 }
 
@@ -473,7 +475,7 @@ type resultGetBlockHeader struct {
 		MerkleRoot    string  `json:"merkleRoot"`
 		Time          int     `json:"time"`
 		MedianTime    int     `json:"medianTime"`
-		Nonce         int     `json:"nonce"`
+		Nonce         int     `json:"nonce,omitempty"`
 		Bits          string  `json:"bits"`
 		Difficulty    float64 `json:"difficulty"`
 	} `json:"result"`

@@ -271,7 +271,7 @@ func evictXpubCacheItems() {
 }
 
 func (w *Worker) getXpubData(xpub string, page int, txsOnPage int, option AccountDetails, filter *AddressFilter, gap int) (*xpubData, uint32, error) {
-	if w.chainType != bchain.ChainBitcoinType || len(xpub) != xpubLen {
+	if (w.chainType != bchain.ChainBitcoinType && w.chainType != bchain.ChainUnitEType) || len(xpub) != xpubLen {
 		return nil, 0, ErrUnsupportedXpub
 	}
 	var (

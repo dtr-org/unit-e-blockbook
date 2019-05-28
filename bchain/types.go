@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"math/big"
+	"net/http"
 )
 
 // ChainType is type of the blockchain
@@ -17,6 +19,7 @@ const (
 	ChainBitcoinType = ChainType(iota)
 	// ChainEthereumType is blockchain derived from ethereum
 	ChainEthereumType
+	ChainUnitEType
 )
 
 // errors with specific meaning returned by blockchain rpc
@@ -60,8 +63,8 @@ type Vin struct {
 // ScriptPubKey contains data about output script
 type ScriptPubKey struct {
 	// Asm       string   `json:"asm"`
-	Hex string `json:"hex,omitempty"`
-	// Type      string   `json:"type"`
+	Hex       string   `json:"hex,omitempty"`
+	Type      string   `json:"type"`
 	Addresses []string `json:"addresses"`
 }
 
@@ -79,6 +82,7 @@ type Tx struct {
 	Hex      string `json:"hex"`
 	Txid     string `json:"txid"`
 	Version  int32  `json:"version"`
+	TxType   uint32 `json:"txtype,omitempty"`
 	LockTime uint32 `json:"locktime"`
 	Vin      []Vin  `json:"vin"`
 	Vout     []Vout `json:"vout"`
@@ -111,7 +115,7 @@ type BlockInfo struct {
 	BlockHeader
 	Version    json.Number `json:"version"`
 	MerkleRoot string      `json:"merkleroot"`
-	Nonce      json.Number `json:"nonce"`
+	Nonce      json.Number `json:"nonce,omitempty"`
 	Bits       string      `json:"bits"`
 	Difficulty json.Number `json:"difficulty"`
 	Txids      []string    `json:"tx,omitempty"`
@@ -203,6 +207,13 @@ type OnNewTxAddrFunc func(tx *Tx, desc AddressDescriptor)
 // AddrDescForOutpointFunc defines function that returns address descriptorfor given outpoint or nil if outpoint not found
 type AddrDescForOutpointFunc func(outpoint Outpoint) AddressDescriptor
 
+// CoinHTMLHandler defines common interface to coin specific html handler
+type CoinHTMLHandler interface {
+	GetExtraNavItems() map[string]string
+	GetExtraFuncMap() template.FuncMap
+	HandleCoinRequest(http.ResponseWriter, *http.Request) (*template.Template, interface{}, error)
+}
+
 // BlockChain defines common interface to block chain daemon
 type BlockChain interface {
 	// life-cycle methods
@@ -237,6 +248,8 @@ type BlockChain interface {
 	GetMempoolEntry(txid string) (*MempoolEntry, error)
 	// parser
 	GetChainParser() BlockChainParser
+	GetCoinHTMLHandler() CoinHTMLHandler
+
 	// EthereumType specific
 	EthereumTypeGetBalance(addrDesc AddressDescriptor) (*big.Int, error)
 	EthereumTypeGetNonce(addrDesc AddressDescriptor) (uint64, error)

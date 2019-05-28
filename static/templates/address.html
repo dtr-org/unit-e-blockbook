@@ -114,7 +114,7 @@
     </div>
 </div>
 <div class="data-div">
-    {{- range $tx := $addr.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{template "txdetail" $data}}{{end -}}
+    {{- range $tx := $addr.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{ if eq $tx.TxType 0 }}{{template "txdetail" $data}}{{else}}{{template "ute_nonstandard" $data}}{{end}}{{end -}}
 </div>
 <nav>{{template "paging" $data }}</nav>
 {{end}}{{end}}

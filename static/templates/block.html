@@ -50,10 +50,11 @@
                     <td>Merkle Root</td>
                     <td class="data ellipsis">{{$b.MerkleRoot}}</td>
                 </tr>
+                {{if $b.Nonce}}
                 <tr>
                     <td>Nonce</td>
                     <td class="data ellipsis">{{$b.Nonce}}</td>
-                </tr>
+                </tr>{{end}}
                 <tr>
                     <td>Bits</td>
                     <td class="data ellipsis">{{$b.Bits}}</td>
@@ -67,12 +68,13 @@
     </div>
 </div>
 {{- if $b.Transactions -}}
+<!-- Unit-e: Add Commits after ADR-21 is implemented -->
 <div class="row h-container">
     <h3 class="col-md-6 col-sm-12">Transactions</h3>
     <nav class="col-md-6 col-sm-12">{{template "paging" $data}}</nav>
 </div>
 <div class="data-div">
-    {{- range $tx := $b.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{template "txdetail" $data}}{{end -}}
+    {{- range $tx := $b.Transactions}}{{$data := setTxToTemplateData $data $tx}}{{ if eq $tx.TxType 0 }}{{template "txdetail" $data}}{{else}}{{template "ute_nonstandard" $data}}{{end}}{{end -}}
 </div>
 <nav>{{template "paging" $data }}</nav>
 {{end}}{{end}}

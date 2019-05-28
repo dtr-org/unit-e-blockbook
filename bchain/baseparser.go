@@ -195,12 +195,14 @@ func (p *BaseParser) PackTx(tx *Tx, height uint32, blockTime int64) ([]byte, err
 			N:               vo.N,
 			ScriptPubKeyHex: hex,
 			ValueSat:        vo.ValueSat.Bytes(),
+			ScriptType:      vo.ScriptPubKey.Type,
 		}
 	}
 	pt := &ProtoTransaction{
 		Blocktime: uint64(blockTime),
 		Height:    height,
 		Locktime:  tx.LockTime,
+		TxType:    tx.TxType,
 		Vin:       pti,
 		Vout:      pto,
 		Version:   tx.Version,
@@ -251,6 +253,7 @@ func (p *BaseParser) UnpackTx(buf []byte) (*Tx, uint32, error) {
 			ScriptPubKey: ScriptPubKey{
 				Addresses: pto.Addresses,
 				Hex:       hex.EncodeToString(pto.ScriptPubKeyHex),
+				Type:      pto.ScriptType,
 			},
 			ValueSat: vs,
 		}
@@ -261,6 +264,7 @@ func (p *BaseParser) UnpackTx(buf []byte) (*Tx, uint32, error) {
 		LockTime:  pt.Locktime,
 		Time:      int64(pt.Blocktime),
 		Txid:      txid,
+		TxType:    pt.TxType,
 		Vin:       vin,
 		Vout:      vout,
 		Version:   pt.Version,

@@ -60,7 +60,7 @@ func (c *TxCache) GetTransaction(txid string) (*bchain.Tx, uint32, error) {
 	c.metrics.TxCacheEfficiency.With(common.Labels{"status": "miss"}).Inc()
 	// cache only confirmed transactions
 	if tx.Confirmations > 0 {
-		if c.chainType == bchain.ChainBitcoinType {
+		if c.chainType == bchain.ChainBitcoinType || c.chainType == bchain.ChainUnitEType {
 			ta, err := c.db.GetTxAddresses(txid)
 			if err != nil {
 				return nil, 0, err

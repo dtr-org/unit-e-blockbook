@@ -14,7 +14,8 @@ syntax = "proto3";
             bytes ValueSat = 1;
             uint32 N = 2;
             bytes ScriptPubKeyHex = 3;
-            repeated string Addresses = 4;
+            string ScriptType = 4;
+            repeated string Addresses = 5;
         }
         bytes Txid = 1;
         bytes Hex = 2;
@@ -24,4 +25,5 @@ syntax = "proto3";
         repeated VinType Vin = 6;
         repeated VoutType Vout = 7;
         int32 Version = 8;
+        uint32 TxType = 9;
     }

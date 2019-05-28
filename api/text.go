@@ -20,14 +20,21 @@ func init() {
 	} else {
 		panic(err)
 	}
-	if tosLink, err := box.MustString("tos_link"); err == nil {
-		tosLink = strings.TrimSpace(tosLink)
-		if _, err := url.ParseRequestURI(tosLink); err == nil {
-			Text.TOSLink = tosLink
-		} else {
-			panic(fmt.Sprint("tos_link is not valid URL:", err.Error()))
-		}
-	} else {
+
+	tosLink, err := box.MustString("tos_link")
+	if err != nil {
 		panic(err)
 	}
+
+	if tosLink == "" {
+		Text.TOSLink = ""
+		return
+	}
+
+	_, err = url.ParseRequestURI(tosLink)
+	if err != nil {
+		panic(fmt.Sprint("tos_link is not valid URL:", err.Error()))
+	}
+
+	Text.TOSLink = strings.TrimSpace(tosLink)
 }
