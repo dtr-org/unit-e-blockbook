@@ -548,14 +548,10 @@ func (s *PublicServer) parseTemplates(templateFuncMap template.FuncMap) []*templ
 		t[txTpl] = createTemplate("./static/templates/tx.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/base.html")
 		t[addressTpl] = createTemplate("./static/templates/address.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
 		t[blockTpl] = createTemplate("./static/templates/block.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
-	} else if s.chainParser.GetChainType() == bchain.ChainUnitEType {
+	} else {
 		t[txTpl] = template.Must(template.New("tx").Funcs(templateFuncMap).ParseFiles("./static/templates/tx.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/base.html"))
 		t[addressTpl] = template.Must(template.New("address").Funcs(templateFuncMap).ParseFiles("./static/templates/address.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/paging.html", "./static/templates/base.html"))
 		t[blockTpl] = template.Must(template.New("block").Funcs(templateFuncMap).ParseFiles("./static/templates/block.html", "./static/templates/txdetail.html", "./static/templates/coins/ute_nonstandard.html", "./static/templates/paging.html", "./static/templates/base.html"))
-	} else {
-		t[txTpl] = createTemplate("./static/templates/tx.html", "./static/templates/txdetail.html", "./static/templates/base.html")
-		t[addressTpl] = createTemplate("./static/templates/address.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html")
-		t[blockTpl] = createTemplate("./static/templates/block.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html")
 	}
 	t[xpubTpl] = createTemplate("./static/templates/xpub.html", "./static/templates/txdetail.html", "./static/templates/paging.html", "./static/templates/base.html")
 	t[mempoolTpl] = createTemplate("./static/templates/mempool.html", "./static/templates/paging.html", "./static/templates/base.html")

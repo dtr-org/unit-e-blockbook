@@ -879,7 +879,7 @@ func websocketTestsBitcoinType(t *testing.T, ts *httptest.Server) {
 					"txid": dbtestdata.TxidB2T2,
 				},
 			},
-			want: `{"id":"8","data":{"hex":"","txid":"3d90d15ed026dc45e19ffb52875ed18fa9e8012ad123d7f7212176e2b0ebdb71","version":0,"locktime":0,"vin":[{"coinbase":"","txid":"7c3be24063f268aaa1ed81b64776798f56088757641a34fb156c4f51ed2e9d25","vout":0,"scriptSig":{"hex":""},"sequence":0,"addresses":null},{"coinbase":"","txid":"effd9ef509383d536b1c8af5bf434c8efbf521a4f2befd4022bbd68694b4ac75","vout":1,"scriptSig":{"hex":""},"sequence":0,"addresses":null}],"vout":[{"ValueSat":118641975500,"value":0,"n":0,"scriptPubKey":{"hex":"a91495e9fbe306449c991d314afe3c3567d5bf78efd287","addresses":null}},{"ValueSat":198641975500,"value":0,"n":1,"scriptPubKey":{"hex":"76a9143f8ba3fda3ba7b69f5818086e12223c6dd25e3c888ac","addresses":null}}],"confirmations":1,"time":22549400001,"blocktime":22549400001}}`,
+			want: `{"id":"8","data":{"hex":"","txid":"3d90d15ed026dc45e19ffb52875ed18fa9e8012ad123d7f7212176e2b0ebdb71","version":0,"locktime":0,"vin":[{"coinbase":"","txid":"7c3be24063f268aaa1ed81b64776798f56088757641a34fb156c4f51ed2e9d25","vout":0,"scriptSig":{"hex":""},"sequence":0,"addresses":null},{"coinbase":"","txid":"effd9ef509383d536b1c8af5bf434c8efbf521a4f2befd4022bbd68694b4ac75","vout":1,"scriptSig":{"hex":""},"sequence":0,"addresses":null}],"vout":[{"ValueSat":118641975500,"value":0,"n":0,"scriptPubKey":{"hex":"a91495e9fbe306449c991d314afe3c3567d5bf78efd287","type":"","addresses":null}},{"ValueSat":198641975500,"value":0,"n":1,"scriptPubKey":{"hex":"76a9143f8ba3fda3ba7b69f5818086e12223c6dd25e3c888ac","type":"","addresses":null}}],"confirmations":1,"time":22549400001,"blocktime":22549400001}}`,
 		},
 		{
 			name: "websocket estimateFee",
