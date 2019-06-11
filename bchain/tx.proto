@@ -18,11 +18,12 @@ syntax = "proto3";
             repeated string Addresses = 5;
         }
         bytes Txid = 1;
-        uint32 TxType = 2;
-        bytes Hex = 3;
-        uint64 Blocktime = 4;
-        uint32 Locktime = 5;
-        uint32 Height = 6;
-        repeated VinType Vin = 7;
-        repeated VoutType Vout = 8;
+        bytes Hex = 2;
+        uint64 Blocktime = 3;
+        uint32 Locktime = 4;
+        uint32 Height = 5;
+        repeated VinType Vin = 6;
+        repeated VoutType Vout = 7;
+        int32 Version = 8;
+        uint32 TxType = 9;
     }

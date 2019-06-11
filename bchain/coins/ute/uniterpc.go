@@ -59,11 +59,11 @@ func (u *UniteRPC) txTypeToString(t uint32) string {
 }
 
 func (u *UniteRPC) extractVoteFromTx(tx *api.Tx) *Vote {
-	return ExtractVoteFromSignature(tx.Vin[0].ScriptSig.Hex)
+	return ExtractVoteFromSignature(tx.Vin[0].Hex)
 }
 
 func (u *UniteRPC) extractSlashFromTx(tx *api.Tx) *Slash {
-	return ExtractSlashFromSignature(tx.Vin[0].ScriptSig.Hex)
+	return ExtractSlashFromSignature(tx.Vin[0].Hex)
 }
 
 // NewUniteHTMLHandler creates the Unit-e's HTML handler and populates it's templates
@@ -114,10 +114,11 @@ type resGetFinalizationConfig struct {
 
 // Initialize initializes UniteRPC instance.
 func (u *UniteRPC) Initialize() error {
-	chainName, err := u.GetChainInfoAndInitializeMempool(u)
+	ci, err := u.GetChainInfo()
 	if err != nil {
 		return err
 	}
+	chainName := ci.Chain
 
 	params := GetChainParams(chainName)
 

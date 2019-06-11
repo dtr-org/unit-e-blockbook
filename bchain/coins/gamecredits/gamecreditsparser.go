@@ -3,16 +3,18 @@ package gamecredits
 import (
 	"blockbook/bchain/coins/btc"
 
-	"github.com/btcsuite/btcd/wire"
-	"github.com/jakm/btcutil/chaincfg"
+	"github.com/martinboehm/btcd/wire"
+	"github.com/martinboehm/btcutil/chaincfg"
 )
 
+// magic numbers
 const (
 	MainnetMagic wire.BitcoinNet = 0xdbb6c0fb
 	TestnetMagic wire.BitcoinNet = 0x0709110b
 	RegtestMagic wire.BitcoinNet = 0xdab5bffa
 )
 
+// chain parameters
 var (
 	MainNetParams chaincfg.Params
 	TestNetParams chaincfg.Params
